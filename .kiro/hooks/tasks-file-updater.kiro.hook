@@ -17,6 +17,6 @@
   },
   "then": {
     "type": "askAgent",
-    "prompt": "Files have been modified in the project. Please check if any tasks have been completed and update both the tasks file in .kiro/specs/remote-claude-web/tasks.md AND the TASKS.md file in the root folder accordingly. Keep both files synchronized with the same completion notes and checkmarks. Do not change existing task descriptions, only add completion notes and check off finished items in both locations."
+    "prompt": "Files have been modified in the project. Please check if any tasks have been completed and update both the tasks file in .kiro/specs/remote-claude-web/tasks.md AND the TASKS.md file in the root folder accordingly. Keep both files synchronized with the same completion notes and checkmarks. Do not change existing task descriptions, only add completion notes and check off finished items in both locations. These files should mirror one another."
   }
 }

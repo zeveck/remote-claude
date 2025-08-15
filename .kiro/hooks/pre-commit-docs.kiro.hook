@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "name": "Pre-commit Documentation Check",
-  "description": "Monitors for git commit operations and ensures CHAT_LOG.md and DEV_DIARY.md are up to date before allowing the commit to proceed",
+  "description": "Monitors for git commit operations and ensures CHAT_LOG.md, DEV_DIARY.md, and both TASKS.md files are up to date before allowing the commit to proceed",
   "version": "1",
   "when": {
     "type": "fileEdited",
@@ -11,6 +11,6 @@
   },
   "then": {
     "type": "askAgent",
-    "prompt": "A git commit is about to happen. Please review and update CHAT_LOG.md and DEV_DIARY.md to ensure they reflect the current state of the project and any recent changes. Make sure both files are current before the commit proceeds."
+    "prompt": "A git commit is about to happen. Please review and update CHAT_LOG.md, DEV_DIARY.md, and both TASKS.md files (root level and .kiro/specs/remote-claude-web/tasks.md) to ensure they reflect the current state of the project and any recent changes. Make sure all documentation files are current before the commit proceeds."
   }
 }
