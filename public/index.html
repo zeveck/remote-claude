@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Claude Web Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <div id="login-section" class="section">
+            <h1>Remote Claude Web Interface</h1>
+            <p>Secure web access to Claude Code functionality</p>
+            
+            <div class="login-form">
+                <h2>Login Required</h2>
+                <form id="login-form" method="post" action="javascript:void(0);">
+                    <div class="form-group">
+                        <label for="password">Password:</label>
+                        <input type="password" id="password" name="password" required autocomplete="current-password" autofocus>
+                    </div>
+                    <button type="button" id="login-btn">Login</button>
+                </form>
+                <div id="login-error" class="error-message"></div>
+            </div>
+        </div>
+
+        <!-- Directory Selection Screen -->
+        <div id="directory-section" class="section hidden">
+            <div class="directory-selection-screen">
+                <h1>Select Working Directory</h1>
+                <p>Choose a directory for Claude Code to work with:</p>
+                
+                <div class="form-group">
+                    <select id="directory-select" class="directory-select">
+                        <option value="">Loading directories...</option>
+                    </select>
+                </div>
+                
+                <div class="button-group">
+                    <button id="select-directory-btn" class="btn-primary" disabled>Continue</button>
+                    <button id="logout-from-dir-btn" class="btn-secondary">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Claude Interface -->
+        <div id="app-section" class="section hidden">
+            <div class="terminal-layout">
+                <!-- Header -->
+                <div class="terminal-header">
+                    <div class="terminal-title">
+                        <span class="terminal-icon">⚡</span>
+                        <span id="current-directory-name">Remote Claude</span>
+                    </div>
+                    <div class="header-controls">
+                        <button id="toggle-files-btn" class="btn-icon" title="Toggle file browser">📁</button>
+                        <button id="logout-btn" class="btn-icon" title="Logout">🚪</button>
+                    </div>
+                </div>
+
+                <!-- Main Terminal Area -->
+                <div class="terminal-container">
+                    <!-- Claude Output (Terminal-like) -->
+                    <div id="claude-output" class="terminal-output">
+                        <div class="terminal-welcome">
+                            <div class="welcome-line">Remote Claude Web Interface</div>
+                            <div class="welcome-line">Interface prototype - not yet implemented</div>
+                            <div class="welcome-line">Claude integration coming soon...</div>
+                        </div>
+                    </div>
+
+                    <!-- Claude Input -->
+                    <div class="terminal-input-container">
+                        <textarea id="claude-input" placeholder="Claude interface not yet implemented - placeholder for future functionality..." rows="3"></textarea>
+                        <button id="send-claude-btn" class="send-btn" title="Send">Send</button>
+                    </div>
+                </div>
+
+                <!-- Collapsible File Browser Sidebar -->
+                <div id="file-browser" class="file-sidebar hidden">
+                    <div class="sidebar-header">
+                        <h4>Files</h4>
+                        <button id="refresh-files-btn" class="btn-icon">🔄</button>
+                    </div>
+                    
+                    <div id="breadcrumbs" class="breadcrumbs-compact"></div>
+                    
+                    <div class="file-list-container">
+                        <div id="file-list" class="file-list-compact">
+                            <div class="loading">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

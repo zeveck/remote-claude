@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Dev Diary Updater",
+  "description": "Updates DEV_DIARY.md when chat pauses to reflect substantial development progress made during the session",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "CHAT_LOG.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Review the recent chat activity in CHAT_LOG.md and check if substantial development progress has been made. If so, update DEV_DIARY.md with a concise summary of the key developments, focusing on what was accomplished rather than detailed implementation steps. Keep entries brief since detailed logs are in CHAT_LOG.md."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "Chat Log Updater",
+  "description": "Monitors for conversation pauses and ensures CHAT_LOG.md is kept up to date with the latest chat interactions",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "CHAT_LOG.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The chat has paused and I need to update CHAT_LOG.md. Please review the current conversation and ensure CHAT_LOG.md contains all recent chat interactions, properly formatted and up to date. Add any missing conversation content and maintain chronological order."
+  }
+}

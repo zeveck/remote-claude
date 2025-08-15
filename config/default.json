@@ -1,0 +1,27 @@
+{
+  "server": {
+    "port": 3443,
+    "host": "0.0.0.0"
+  },
+  "ssl": {
+    "keyPath": "./config/ssl/server.key",
+    "certPath": "./config/ssl/server.crt"
+  },
+  "auth": {
+    "sessionSecret": "change-this-in-production",
+    "sessionTimeout": 3600000,
+    "maxLoginAttempts": 5
+  },
+  "claude": {
+    "timeout": 30000,
+    "maxConcurrent": 3,
+    "rateLimit": {
+      "requests": 100,
+      "window": 60000
+    }
+  },
+  "security": {
+    "allowedDirectoriesFile": "./config/allow-dirs.txt",
+    "passwordFile": "./config/passwd.txt"
+  }
+}
