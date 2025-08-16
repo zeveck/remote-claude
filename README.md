@@ -2,6 +2,10 @@
 
 Secure web interface for remote access to Claude Code functionality from mobile devices and remote locations.
 
+**⚠️ NOTE**: This is primarily an exercise in developing an app using Kiro and should be used with caution.
+
+**⚠️ WARNING**: This tool provides command execution capability and is designed for use on local networks only. It grants authenticated users the ability to run Claude Code (and thus execute commands) with your user privileges. For security, always use behind a firewall and avoid exposing to the public internet.
+
 ## Features
 
 - 🔒 SSL/HTTPS encryption with self-signed certificates (using node-forge)
@@ -121,6 +125,11 @@ remote_term_llm/
 - **Authentication Issues**: Re-run `npm run setup-password` to reset password
 - **Directory Access**: Use `npm run list-directories` to verify allowed paths
 
+## Credits
+
+Created by Rich Conlan  
+Coded by via Kiro using Claude Sonnet 4.0
+
 ## License
 
-MIT
+This project is provided as-is for educational and personal use.

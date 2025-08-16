@@ -19,10 +19,11 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
 }
 
 /* Override container for app section to prevent centering */
@@ -441,7 +442,7 @@ rectory Selection Screen */
 /* Terminal Layout */
 .terminal-layout {
     display: flex;
-    height: 95vh;
+    height: 98vh;
     background-color: #1a1a1a;
     overflow: hidden;
 }
@@ -500,7 +501,7 @@ rectory Selection Screen */
     display: flex;
     flex-direction: column;
     margin-top: 50px;
-    height: calc(95vh - 50px);
+    height: calc(98vh - 50px);
     overflow: hidden;
 }
 
@@ -593,7 +594,7 @@ rectory Selection Screen */
     display: flex;
     flex-direction: column;
     margin-top: 50px;
-    height: calc(95vh - 50px);
+    height: calc(98vh - 50px);
 }
 
 .sidebar-header {
@@ -760,4 +761,17 @@ rectory Selection Screen */
     .button-group {
         flex-direction: column;
     }
+}
+
+/* Version display in lower right corner */
+.version-display {
+    position: fixed;
+    bottom: 5px;
+    right: 5px;
+    color: #888;
+    font-size: 9px;
+    font-family: monospace;
+    z-index: 1000;
+    pointer-events: none;
+    user-select: none;
 }

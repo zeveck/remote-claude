@@ -1,6 +1,24 @@
 # Change Log - Remote Claude Web Interface
 
-## [1.0.0] - 2025-01-16 - Production Release
+## [0.1.1] - 2025-08-16 - UI Polish and User Experience Enhancements
+
+### 🎨 UI Enhancements
+- **Version Display**: Added version number in lower right corner of interface
+- **Bold Text Formatting**: Claude responses now render `**text**` as bold formatting
+- **Layout Fixes**: Resolved scrollbar issues by adjusting container height and viewport calculations
+- **Visual Polish**: Improved version display styling (smaller, cleaner appearance)
+
+### 🔧 Technical Improvements
+- **Container Height**: Fixed viewport height calculations to eliminate unwanted scrollbars
+- **Response Parsing**: Added `formatClaudeResponse()` method to safely parse and format Claude output
+- **XSS Protection**: HTML escaping in Claude responses to prevent security issues
+
+### 📚 Documentation Updates
+- **Documentation Maintenance**: Transitioned from hooks to steering for more reliable documentation updates
+- **Reduced Token Usage**: Eliminated redundant hook executions for documentation maintenance
+- **Improved Reliability**: Steering rules provide consistent documentation awareness without timing issues
+
+## [0.1.0] - 2025-08-15 - Initial Release
 
 ### 🎉 Major Features Added
 - **Full Claude CLI Integration**: Real `claude` command execution with file creation
@@ -52,6 +70,7 @@
 - Development diary with session notes (DEV_DIARY.md)
 - Test summary with coverage details (TEST_SUMMARY.md)
 - Setup and usage instructions (README.md)
+- Automated documentation maintenance via steering rules
 
 ### 🔧 Setup & Configuration
 - Interactive setup script with guided configuration

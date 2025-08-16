@@ -536,6 +536,23 @@ class RemoteClaudeApp {
         textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
     }
     
+    formatClaudeResponse(content) {
+        // Escape HTML to prevent XSS attacks
+        const escapeHtml = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+        
+        // Escape the content first
+        let formatted = escapeHtml(content);
+        
+        // Convert **text** to <strong>text</strong>
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        return formatted;
+    }
+    
     addToTerminal(content, type = 'output') {
         const output = document.getElementById('claude-output');
         const entry = document.createElement('div');
@@ -546,12 +563,29 @@ class RemoteClaudeApp {
             entry.style.color = '#00d4aa';
             entry.style.marginBottom = '10px';
         } else {
-            entry.textContent = content;
+            // Parse **text** and convert to bold formatting
+            const formattedContent = this.formatClaudeResponse(content);
+            entry.innerHTML = formattedContent;
             entry.style.marginBottom = '15px';
         }
         
         output.appendChild(entry);
         output.scrollTop = output.scrollHeight;
+    }
+    
+    formatClaudeResponse(content) {
+        // Escape HTML first to prevent XSS
+        const escaped = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        
+        // Convert **text** to <strong>text</strong>
+        const formatted = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        
+        return formatted;
     }
     
     async sendClaudeCommand() {
