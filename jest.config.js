@@ -7,12 +7,9 @@ module.exports = {
     'src/**/*.js',
     '!src/setup.js',
     '!src/password-setup.js',
-    '!src/directory-setup.js',
     '!src/add-directory.js',
     '!src/list-directories.js',
     '!src/cert-generator.js',
-    '!src/generate-ssl.js',
-    '!src/simple-ssl.js',
     '!src/secure-input.js'
   ],
   testMatch: [

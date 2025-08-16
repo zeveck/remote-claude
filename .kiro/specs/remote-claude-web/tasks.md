@@ -28,10 +28,7 @@
   - _Requirements: 6.1, 6.4_
 
 - [x] 2. Implement SSL certificate generation for Windows
-
-
-
-  - Create PowerShell script to generate self-signed certificates
+  - Create SSL certificate generation using node-forge (no PowerShell required)
   - Implement certificate validation and loading
   - Add certificate management utilities
   - _Requirements: 2.4, 6.1_
@@ -122,7 +119,7 @@
   - _Requirements: 1.4, 2.1, 3.3_
 
 - [x] 12. Create setup and startup scripts
-  - Build Windows PowerShell scripts for SSL certificate generation
+  - Build cross-platform SSL certificate generation using node-forge
   - Create password setup utility with secure hashing
   - Implement directory configuration utilities (add/list directories)
   - Add comprehensive setup script for initial configuration
