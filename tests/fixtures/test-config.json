@@ -1,0 +1,19 @@
+{
+  "server": {
+    "port": 3443,
+    "host": "0.0.0.0"
+  },
+  "ssl": {
+    "keyPath": "tests/fixtures/test-key.pem",
+    "certPath": "tests/fixtures/test-cert.pem"
+  },
+  "auth": {
+    "sessionSecret": "test-secret-key-for-testing-only",
+    "sessionTimeout": 3600000,
+    "maxLoginAttempts": 5,
+    "passwordFile": "tests/fixtures/test-passwd.txt"
+  },
+  "directories": {
+    "allowedFile": "tests/fixtures/test-allow-dirs.txt"
+  }
+}

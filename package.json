@@ -8,7 +8,6 @@
     "dev": "node --watch src/server.js",
     "setup": "node src/setup.js",
     "setup-password": "node src/password-setup.js",
-    "setup-directories": "node src/directory-setup.js",
     "add-directory": "node src/add-directory.js",
     "list-directories": "node src/list-directories.js",
     "generate-ssl": "node src/cert-generator.js config/ssl",

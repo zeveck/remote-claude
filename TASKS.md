@@ -16,28 +16,16 @@
   - _Complete system design ready for implementation_
 
 - [x] 1. Set up project structure and dependencies
-
-
-
   - Create Node.js project with package.json
   - Install Express, HTTPS, crypto, and other core dependencies
   - Set up basic directory structure (src/, config/, public/)
-
-
-
   - _Requirements: 6.1, 6.4_
 
 - [x] 2. Implement SSL certificate generation for Windows
-
-
-
   - Create PowerShell script to generate self-signed certificates
   - Implement certificate validation and loading
   - Add certificate management utilities
   - _Requirements: 2.4, 6.1_
-
-
-
 
 - [x] 3. Create configuration management system
   - Implement password hashing with SHA-256 and salt
@@ -61,11 +49,6 @@
   - _Requirements: 3.2, 3.3, 3.4, 4.1, 4.2, 4.3_
 
 - [x] 6. Create Claude Code integration foundation
-
-
-
-
-
   - Implement ClaudeCodeSandbox class with Windows process spawning
   - Create command sanitization and validation
   - Add basic CLI command building for real `claude` CLI (not claude-code)

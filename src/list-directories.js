@@ -12,7 +12,6 @@ function listDirectories() {
       console.log('📁 No directories configured yet');
       console.log('\n💡 Add directories with:');
       console.log('   npm run add-directory <path>');
-      console.log('   npm run setup-directories');
       return;
     }
     
