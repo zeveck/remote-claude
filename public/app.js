@@ -74,6 +74,7 @@ class RemoteClaudeApp {
         
         document.getElementById('directory-select').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 this.handleDirectorySelection();
             }
         });
@@ -82,14 +83,26 @@ class RemoteClaudeApp {
             this.handleLogout();
         });
         
+        // Global Enter key handler
+        document.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                // Directory selection screen
+                if (!this.directorySection.classList.contains('hidden')) {
+                    const btn = document.getElementById('select-directory-btn');
+                    if (!btn.disabled) {
+                        e.preventDefault();
+                        this.handleDirectorySelection();
+                    }
+                }
+            }
+        });
+        
         // File browser toggle
         document.getElementById('toggle-files-btn').addEventListener('click', () => {
             this.toggleFileBrowser();
         });
         
-        document.getElementById('refresh-files-btn').addEventListener('click', () => {
-            this.refreshFiles();
-        });
+
         
         // Claude interface
         document.getElementById('send-claude-btn').addEventListener('click', () => {
@@ -97,10 +110,11 @@ class RemoteClaudeApp {
         });
         
         document.getElementById('claude-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.ctrlKey) {
+            if (e.key === 'Enter' && !e.ctrlKey) {
                 e.preventDefault();
                 this.sendClaudeCommand();
             }
+            // Ctrl+Enter adds newline (default behavior, don't prevent)
             // Auto-resize textarea
             this.autoResizeTextarea(e.target);
         });
@@ -197,6 +211,11 @@ class RemoteClaudeApp {
         this.loginSection.classList.add('hidden');
         this.directorySection.classList.remove('hidden');
         this.appSection.classList.add('hidden');
+        
+        // Auto-focus the directory dropdown
+        setTimeout(() => {
+            document.getElementById('directory-select').focus();
+        }, 100);
     }
     
     showAppSection() {
@@ -483,7 +502,6 @@ class RemoteClaudeApp {
                 } else {
                     // For now, just show file info. Later we can add a file viewer modal
                     this.updateStatus(`Viewing ${file.name} (${this.formatFileSize(file.size)})`, 'info');
-                    console.log('File content:', file.content);
                 }
             } else {
                 this.updateStatus(`Failed to read file: ${data.error}`, 'error');
@@ -511,26 +529,7 @@ class RemoteClaudeApp {
         });
     }
     
-    startAutoRefresh() {
-        // Clear any existing timer
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-        }
-        
-        // Start auto-refresh every 30 seconds, but only when window is visible
-        this.refreshTimer = setInterval(() => {
-            if (this.isWindowVisible && this.appSection && !this.appSection.classList.contains('hidden')) {
-                this.refreshFiles();
-            }
-        }, 30000); // 30 seconds
-    }
-    
-    stopAutoRefresh() {
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-            this.refreshTimer = null;
-        }
-    }
+
     
     autoResizeTextarea(textarea) {
         textarea.style.height = 'auto';
@@ -571,14 +570,55 @@ class RemoteClaudeApp {
         input.style.height = 'auto';
         
         // Show loading
-        this.addToTerminal('Processing command...');
+        this.addToTerminal('Executing Claude Code command...');
         
-        // TODO: Implement Claude Code integration
-        setTimeout(() => {
-            this.addToTerminal('Claude Code integration coming in next task...');
-            this.addToTerminal('This will execute your command in the selected directory context.');
-            this.addToTerminal('Use Ctrl+Enter to send commands.');
-        }, 1000);
+        try {
+            const response = await fetch('/api/command', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'generate', // Default action for now
+                    prompt: command,
+                    options: {}
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.addToTerminal('✅ Command completed successfully');
+                
+                if (data.result.parsedOutput) {
+                    if (data.result.parsedOutput.type === 'result') {
+                        // Handle Claude CLI JSON response - clean and simple
+                        this.addToTerminal(data.result.parsedOutput.result);
+                    } else if (data.result.parsedOutput.type === 'text') {
+                        this.addToTerminal(data.result.parsedOutput.content);
+                    } else {
+                        // Handle other JSON responses
+                        this.addToTerminal(JSON.stringify(data.result.parsedOutput, null, 2));
+                    }
+                } else {
+                    this.addToTerminal(data.result.output);
+                }
+                
+                // Refresh files to show any changes
+                this.refreshFiles();
+                
+            } else {
+                this.addToTerminal(`❌ Error: ${data.error}`);
+                
+                if (data.needsDirectorySelection) {
+                    this.addToTerminal('Please select a working directory first.');
+                }
+            }
+            
+        } catch (error) {
+            console.error('Claude Code execution error:', error);
+            this.addToTerminal(`❌ Connection error: ${error.message}`);
+        }
     }
 }
 

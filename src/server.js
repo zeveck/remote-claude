@@ -1,7 +1,6 @@
 const express = require('express');
 const https = require('https');
 const path = require('path');
-const fs = require('fs');
 const SSLManager = require('./ssl-manager');
 const AuthMiddleware = require('./auth-middleware');
 
@@ -37,6 +36,10 @@ app.get('/api/auth-status', authMiddleware.getAuthStatus());
 // Initialize file system manager
 const FileSystemManager = require('./filesystem-manager');
 const fileSystemManager = new FileSystemManager(config);
+
+// Initialize Claude Code integration
+const { ClaudeCodeIntegration } = require('./claude-code-integration');
+const claudeCodeIntegration = new ClaudeCodeIntegration();
 
 // Protected routes (require authentication)
 app.get('/api/status', authMiddleware.requireAuth(), (req, res) => {
@@ -157,6 +160,85 @@ app.get('/api/file-content', authMiddleware.requireAuth(), (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// Claude Code execution endpoint
+app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
+  try {
+    const { action, prompt, options = {} } = req.body;
+    const currentDirectory = req.session.currentDirectory;
+    
+    // Validate required fields
+    if (!action || !prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Action and prompt are required'
+      });
+    }
+    
+    if (!currentDirectory) {
+      return res.status(400).json({
+        success: false,
+        error: 'No directory selected. Please select a directory first.',
+        needsDirectorySelection: true
+      });
+    }
+    
+    // Create request object
+    const request = {
+      userId: req.session.id || 'anonymous',
+      workingDirectory: currentDirectory,
+      action,
+      prompt,
+      options
+    };
+    
+    // Execute Claude Code command
+    const result = await claudeCodeIntegration.execute(request);
+    
+    // Parse response
+    const parsedResponse = claudeCodeIntegration.parseResponse(result.output);
+    
+    res.json({
+      success: true,
+      result: {
+        ...result,
+        parsedOutput: parsedResponse
+      },
+      message: `Claude Code ${action} completed successfully`
+    });
+    
+  } catch (error) {
+    console.error('Claude Code execution error:', error);
+    
+    // Handle specific error types
+    if (error.message.includes('Rate limit exceeded')) {
+      return res.status(429).json({
+        success: false,
+        error: error.message,
+        retryAfter: 3600 // 1 hour in seconds
+      });
+    }
+    
+    if (error.message.includes('timeout')) {
+      return res.status(408).json({
+        success: false,
+        error: 'Command execution timed out. Please try a simpler request.'
+      });
+    }
+    
+    if (error.message.includes('blocked commands')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Command contains blocked patterns for security reasons'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Claude Code execution failed'
     });
   }
 });
