@@ -64,6 +64,13 @@ h2 {
     border: 1px solid #404040;
 }
 
+/* Force immediate password masking on all devices */
+input[type="password"] {
+    -webkit-text-security: disc !important;
+    text-security: disc !important;
+    font-family: text-security-disc !important;
+}
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -85,6 +92,18 @@ h2 {
     color: #e0e0e0;
     transition: border-color 0.3s;
 }
+
+/* Android GBoard password echo mitigation */
+.form-group input[type="password"] {
+    -webkit-text-security: disc !important;
+    text-security: disc !important;
+    font-family: text-security-disc !important;
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+}
+
+
 
 .form-group input:focus, .form-group select:focus {
     outline: none;
@@ -762,17 +781,57 @@ rectory Selection Screen */
     .button-group {
         flex-direction: column;
     }
+    
+    .bottom-right-controls {
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .download-btn {
+        padding: 6px 8px;
+        font-size: 14px;
+    }
 }
 
-/* Version display in lower right corner */
-.version-display {
+/* Bottom right controls */
+.bottom-right-controls {
     position: fixed;
     bottom: 5px;
     right: 5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.version-display {
     color: #888;
     font-size: 9px;
     font-family: monospace;
-    z-index: 1000;
     pointer-events: none;
     user-select: none;
+}
+
+.download-btn {
+    background: #404040;
+    border: 1px solid #555;
+    color: #e0e0e0;
+    padding: 4px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    pointer-events: auto;
+    width: auto;
+    min-width: auto;
+}
+
+.download-btn:hover {
+    background-color: #555;
+    border-color: #666;
+    transform: translateY(-1px);
+}
+
+.download-btn:active {
+    transform: translateY(0);
 }

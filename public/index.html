@@ -13,11 +13,10 @@
             <h1>Remote Claude Web Interface</h1>
             
             <div class="login-form">
-                <h2>Login Required</h2>
                 <form id="login-form" method="post" action="javascript:void(0);">
                     <div class="form-group">
                         <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required autocomplete="current-password" autofocus>
+                        <input type="password" id="password" name="password" required autocomplete="current-password" autofocus spellcheck="false" autocorrect="off" autocapitalize="off">
                     </div>
                     <button type="button" id="login-btn">Login</button>
                 </form>
@@ -65,7 +64,6 @@
                     <div id="claude-output" class="terminal-output">
                         <div class="terminal-welcome">
                             <div class="welcome-line">Remote Claude Web Interface</div>
-                            <div class="welcome-line">Claude Code integration ready</div>
                             <div class="welcome-line">Type your command and press Enter to execute</div>
                         </div>
                     </div>
@@ -95,8 +93,11 @@
         </div>
     </div>
     
-    <!-- Version display in lower right corner -->
-    <div class="version-display">v0.1.1</div>
+    <!-- Version display and download button in lower right corner -->
+    <div class="bottom-right-controls">
+        <button id="download-conversation-btn" class="download-btn" title="Download conversation history">⬇</button>
+        <div class="version-display">v0.1.2</div>
+    </div>
     
     <script src="app.js"></script>
 </body>

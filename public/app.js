@@ -17,6 +17,11 @@ class RemoteClaudeApp {
         this.refreshTimer = null;
         this.isWindowVisible = true;
         
+        // Conversation tracking
+        this.conversationHistory = [];
+        this.currentDirectory = null;
+        this.sessionStartTime = new Date().toISOString();
+        
         this.init();
     }
     
@@ -121,6 +126,11 @@ class RemoteClaudeApp {
         
         document.getElementById('claude-input').addEventListener('input', (e) => {
             this.autoResizeTextarea(e.target);
+        });
+        
+        // Download conversation button
+        document.getElementById('download-conversation-btn').addEventListener('click', () => {
+            this.downloadConversation();
         });
     }
     
@@ -322,6 +332,7 @@ class RemoteClaudeApp {
             if (data.success) {
                 this.showAppSection();
                 this.currentDirectoryName.textContent = data.directory.name;
+                this.currentDirectory = data.directory.name;
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
                 this.updateStatus('Directory selected successfully', 'success');
             } else {
@@ -596,6 +607,9 @@ class RemoteClaudeApp {
             return;
         }
         
+        // Track user command in conversation history
+        this.addToConversationHistory('user', command);
+        
         // Add command to terminal
         this.addToTerminal(command, 'command');
         
@@ -624,35 +638,96 @@ class RemoteClaudeApp {
             if (data.success) {
                 this.addToTerminal('✅ Command completed successfully');
                 
+                let claudeResponse = '';
                 if (data.result.parsedOutput) {
                     if (data.result.parsedOutput.type === 'result') {
                         // Handle Claude CLI JSON response - clean and simple
-                        this.addToTerminal(data.result.parsedOutput.result);
+                        claudeResponse = data.result.parsedOutput.result;
+                        this.addToTerminal(claudeResponse);
                     } else if (data.result.parsedOutput.type === 'text') {
-                        this.addToTerminal(data.result.parsedOutput.content);
+                        claudeResponse = data.result.parsedOutput.content;
+                        this.addToTerminal(claudeResponse);
                     } else {
                         // Handle other JSON responses
-                        this.addToTerminal(JSON.stringify(data.result.parsedOutput, null, 2));
+                        claudeResponse = JSON.stringify(data.result.parsedOutput, null, 2);
+                        this.addToTerminal(claudeResponse);
                     }
                 } else {
-                    this.addToTerminal(data.result.output);
+                    claudeResponse = data.result.output;
+                    this.addToTerminal(claudeResponse);
                 }
+                
+                // Track Claude's response in conversation history
+                this.addToConversationHistory('claude', claudeResponse);
                 
                 // Refresh files to show any changes
                 this.refreshFiles();
                 
             } else {
-                this.addToTerminal(`❌ Error: ${data.error}`);
+                const errorMessage = `❌ Error: ${data.error}`;
+                this.addToTerminal(errorMessage);
                 
                 if (data.needsDirectorySelection) {
                     this.addToTerminal('Please select a working directory first.');
                 }
+                
+                // Track error in conversation history
+                this.addToConversationHistory('system', errorMessage);
             }
             
         } catch (error) {
             console.error('Claude Code execution error:', error);
-            this.addToTerminal(`❌ Connection error: ${error.message}`);
+            const errorMessage = `❌ Connection error: ${error.message}`;
+            this.addToTerminal(errorMessage);
+            
+            // Track connection error in conversation history
+            this.addToConversationHistory('system', errorMessage);
         }
+    }
+    
+    addToConversationHistory(role, content) {
+        this.conversationHistory.push({
+            role: role, // 'user', 'claude', or 'system'
+            content: content,
+            timestamp: new Date().toISOString(),
+            directory: this.currentDirectory
+        });
+    }
+    
+    downloadConversation() {
+        if (this.conversationHistory.length === 0) {
+            this.updateStatus('No conversation to download', 'info');
+            return;
+        }
+        
+        const conversationData = {
+            metadata: {
+                sessionStartTime: this.sessionStartTime,
+                exportTime: new Date().toISOString(),
+                directory: this.currentDirectory || 'unknown',
+                totalMessages: this.conversationHistory.length,
+                version: 'v0.1.2'
+            },
+            conversation: this.conversationHistory
+        };
+        
+        const jsonString = JSON.stringify(conversationData, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const directoryName = this.currentDirectory || 'unknown';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const filename = `remote-claude.${directoryName}.${timestamp}.json`;
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.updateStatus(`Conversation exported as ${filename}`, 'success');
     }
 }
 

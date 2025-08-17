@@ -1,5 +1,36 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.2] - 2025-08-16 - Security Enhancements and Interface Refinements
+
+### 🔒 Security Improvements
+- **Password Field Security**: Enhanced mobile password field with additional security attributes
+- **Android Compatibility**: Added `spellcheck="false"`, `autocorrect="off"`, `autocapitalize="off"` to prevent keyboard caching
+- **CSS Text Security**: Implemented `-webkit-text-security: disc` for improved password masking
+- **Mobile Password Masking**: Applied aggressive CSS rules to minimize character echo on mobile devices
+
+### 🎨 Interface Refinements
+- **Conversation Export**: Added download button (⬇) for exporting conversation history as JSON
+- **Cleaner Login**: Removed redundant "Login Required" text from login form
+- **Export Functionality**: Complete conversation tracking with structured JSON export including metadata
+- **Smart Filenames**: Export files named as `remote-claude.{directory}.{timestamp}.json`
+
+### 📊 Conversation Export Features
+- **Complete Tracking**: Captures all user commands, Claude responses, and system messages
+- **Rich Metadata**: Includes session start time, export time, directory name, message count, version
+- **Structured Data**: JSON format with role identification (user/claude/system) and timestamps
+- **Mobile Responsive**: Download button properly styled for mobile devices
+
+### 🛠️ Technical Enhancements
+- **Conversation History**: Added conversation tracking array to RemoteClaudeApp class
+- **Export Manager**: Implemented blob creation and automatic download functionality
+- **Security Attributes**: Enhanced password field with comprehensive mobile security measures
+- **CSS Improvements**: Better password field styling and mobile responsiveness
+
+### 📚 Future Planning
+- **Conversation Beautifier Spec**: Created comprehensive specification for companion app
+- **15 Implementation Tasks**: Detailed roadmap for building HTML conversation beautifier
+- **Client-Side Architecture**: Planned vanilla JavaScript app with theme support and batch processing
+
 ## [0.1.1] - 2025-08-16 - UI Polish and User Experience Enhancements
 
 ### 🎨 UI Enhancements
