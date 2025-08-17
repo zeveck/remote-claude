@@ -291,7 +291,7 @@ class RemoteClaudeApp {
         directories.forEach((dir, index) => {
             const option = document.createElement('option');
             option.value = dir.fullPath;
-            option.textContent = `${dir.name} (${dir.fullPath})`;
+            option.textContent = dir.name;
             if (index === 0) option.selected = true;
             select.appendChild(option);
         });
