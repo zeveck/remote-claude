@@ -34,8 +34,26 @@ class RemoteClaudeApp {
         // Set up visibility change listener for auto-refresh
         this.setupVisibilityListener();
         
+        // Fix mobile viewport height issues
+        this.fixMobileViewport();
+        
         // Check authentication status
         await this.checkAuthStatus();
+    }
+    
+    fixMobileViewport() {
+        // Apply viewport fix for all devices to ensure consistency
+        const setViewportHeight = () => {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+        
+        setViewportHeight();
+        window.addEventListener('resize', setViewportHeight);
+        window.addEventListener('orientationchange', setViewportHeight);
+        
+        // Also fix on window focus (helps with mobile browser address bar changes)
+        window.addEventListener('focus', setViewportHeight);
     }
     
     async initializeApp() {
@@ -131,6 +149,25 @@ class RemoteClaudeApp {
         // Download conversation button
         document.getElementById('download-conversation-btn').addEventListener('click', () => {
             this.downloadConversation();
+        });
+        
+        // File viewer modal
+        document.getElementById('close-file-viewer').addEventListener('click', () => {
+            this.closeFileViewer();
+        });
+        
+        // Close modal when clicking outside
+        document.getElementById('file-viewer-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'file-viewer-modal') {
+                this.closeFileViewer();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeFileViewer();
+            }
         });
     }
     
@@ -232,7 +269,16 @@ class RemoteClaudeApp {
         this.loginSection.classList.add('hidden');
         this.directorySection.classList.add('hidden');
         this.appSection.classList.remove('hidden');
-        document.getElementById('claude-input').focus();
+        
+        // Only auto-focus on desktop to prevent mobile keyboard popup
+        if (!this.isMobileDevice()) {
+            document.getElementById('claude-input').focus();
+        }
+    }
+    
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+               (window.innerWidth <= 768 && 'ontouchstart' in window);
     }
     
     showLoginError(message) {
@@ -334,7 +380,6 @@ class RemoteClaudeApp {
                 this.currentDirectoryName.textContent = data.directory.name;
                 this.currentDirectory = data.directory.name;
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
-                this.updateStatus('Directory selected successfully', 'success');
             } else {
                 this.updateStatus(`Failed to select directory: ${data.error}`, 'error');
             }
@@ -511,8 +556,7 @@ class RemoteClaudeApp {
                 if (file.binary) {
                     this.updateStatus(`${file.name}: ${file.message}`, 'info');
                 } else {
-                    // For now, just show file info. Later we can add a file viewer modal
-                    this.updateStatus(`Viewing ${file.name} (${this.formatFileSize(file.size)})`, 'info');
+                    this.showFileViewer(file);
                 }
             } else {
                 this.updateStatus(`Failed to read file: ${data.error}`, 'error');
@@ -523,10 +567,76 @@ class RemoteClaudeApp {
         }
     }
     
+    showFileViewer(file) {
+        const modal = document.getElementById('file-viewer-modal');
+        const title = document.getElementById('file-viewer-title');
+        const codeElement = document.getElementById('file-viewer-code');
+        
+        title.textContent = `${file.name} (${this.formatFileSize(file.size)})`;
+        
+        const content = file.content || 'File is empty';
+        const language = this.detectLanguage(file.name);
+        
+        // Set the language class for Prism.js
+        codeElement.className = language ? `language-${language}` : '';
+        codeElement.textContent = content;
+        
+        // Apply syntax highlighting if Prism is available
+        if (window.Prism && language) {
+            window.Prism.highlightElement(codeElement);
+        }
+        
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+    
+    detectLanguage(filename) {
+        const ext = filename.toLowerCase().split('.').pop();
+        const languageMap = {
+            'js': 'javascript',
+            'jsx': 'jsx',
+            'ts': 'typescript',
+            'tsx': 'tsx',
+            'py': 'python',
+            'html': 'html',
+            'htm': 'html',
+            'css': 'css',
+            'scss': 'scss',
+            'sass': 'sass',
+            'json': 'json',
+            'xml': 'xml',
+            'md': 'markdown',
+            'yml': 'yaml',
+            'yaml': 'yaml',
+            'sh': 'bash',
+            'bash': 'bash',
+            'sql': 'sql',
+            'php': 'php',
+            'java': 'java',
+            'c': 'c',
+            'cpp': 'cpp',
+            'cs': 'csharp',
+            'go': 'go',
+            'rs': 'rust',
+            'rb': 'ruby'
+        };
+        
+        return languageMap[ext] || null;
+    }
+    
+    closeFileViewer() {
+        const modal = document.getElementById('file-viewer-modal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = ''; // Restore scrolling
+    }
+    
     // UI Helper Methods
     toggleFileBrowser() {
         const fileBrowser = document.getElementById('file-browser');
         fileBrowser.classList.toggle('hidden');
+        
+        // The new flexbox layout handles height automatically
+        // No manual height calculations needed
     }
     
     setupVisibilityListener() {

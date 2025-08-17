@@ -31,6 +31,36 @@
 - **15 Implementation Tasks**: Detailed roadmap for building HTML conversation beautifier
 - **Client-Side Architecture**: Planned vanilla JavaScript app with theme support and batch processing
 
+### 🎯 Additional v0.1.2 Enhancements
+
+#### 📁 File Viewer Implementation
+- **Complete File Viewer**: Click any file in the file browser to view its content in a modal
+- **Syntax Highlighting**: Professional code display for JavaScript, Python, HTML, CSS, JSON, Markdown, and more
+- **Prism.js Integration**: VS Code-like color scheme with dark theme compatibility
+- **Mobile Responsive**: Full-screen modal on mobile devices with proper touch interactions
+- **Multiple Close Methods**: Close button, click outside modal, or Escape key
+
+#### 📱 Mobile Viewport Revolution
+- **Fixed 100vh Issues**: Solved fundamental mobile browser viewport height problems
+- **Dynamic Height Calculation**: Uses actual `window.innerHeight` instead of problematic `100vh`
+- **CSS Custom Properties**: Implemented `--vh` variable for reliable mobile layouts
+- **Universal Application**: Fixed login, directory selection, and main app screens
+- **Responsive Updates**: Handles orientation changes, browser chrome, and window focus events
+
+#### 🎨 Interface Refinements
+- **Cleaner Welcome**: Removed misleading "Claude Code integration ready" static text
+- **Reduced Noise**: Eliminated unnecessary "Directory selected successfully" status message
+- **Minimal Instructions**: Removed redundant "Type your command and press Enter" text
+- **Smart Auto-Focus**: Disabled auto-focus on mobile to prevent unwanted keyboard popup
+- **Professional Appearance**: Clean, minimal interface without unnecessary clutter
+
+#### 🔧 Technical Improvements
+- **Mobile Detection**: Smart device detection using user agent and touch capability
+- **Flexbox Layout**: Proper space distribution ensuring input area always stays visible
+- **File Browser Toggle**: Fixed mobile layout when hiding/showing file browser
+- **Language Detection**: Automatic syntax highlighting based on file extensions
+- **Error Handling**: Graceful fallback for binary files and unsupported formats
+
 ## [0.1.1] - 2025-08-16 - UI Polish and User Experience Enhancements
 
 ### 🎨 UI Enhancements

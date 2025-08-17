@@ -19,7 +19,7 @@ body {
     max-width: 800px;
     margin: 0 auto;
     padding: 20px;
-    min-height: 80vh;
+    min-height: calc(var(--vh, 1vh) * 80);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -398,7 +398,8 @@ button:disabled {
         padding: 10px;
         align-items: flex-start;
         padding-top: 20px;
-        min-height: 70vh;
+        min-height: calc(var(--vh, 1vh) * 70);
+        max-height: calc(var(--vh, 1vh) * 90);
     }
     
     h1 {
@@ -757,20 +758,48 @@ rectory Selection Screen */
 @media (max-width: 768px) {
     .terminal-layout {
         flex-direction: column;
+        height: calc(var(--vh, 1vh) * 100 - 50px); /* Use actual viewport height */
+        max-height: calc(var(--vh, 1vh) * 100 - 50px);
+        overflow: hidden;
     }
     
     .file-sidebar {
         width: 100%;
-        height: 200px;
+        height: 160px; /* Further reduced */
         margin-top: 0;
         border-left: none;
         border-top: 1px solid #404040;
         order: 2;
+        flex-shrink: 0;
     }
     
     .terminal-container {
         order: 1;
-        height: calc(100vh - 250px);
+        flex: 1;
+        min-height: 150px; /* Minimum usable height */
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    /* Ensure terminal output can scroll but input stays visible */
+    .terminal-output {
+        flex: 1;
+        min-height: 80px; /* Minimum message area */
+        overflow-y: auto;
+        padding: 10px;
+    }
+    
+    .terminal-input-container {
+        flex-shrink: 0;
+        padding: 8px 12px;
+        background-color: #161b22;
+        border-top: 1px solid #30363d;
+    }
+    
+    #claude-input {
+        min-height: 40px;
+        max-height: 120px;
     }
     
     .directory-selection-screen {
@@ -834,4 +863,179 @@ rectory Selection Screen */
 
 .download-btn:active {
     transform: translateY(0);
+}
+
+/* File Viewer Modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.modal-content {
+    background: #2d2d2d;
+    border-radius: 8px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 800px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #404040;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid #404040;
+    background: #1a1a1a;
+    border-radius: 8px 8px 0 0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #00d4aa;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.close-btn:hover {
+    background-color: #404040;
+}
+
+.modal-body {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#file-viewer-content {
+    flex: 1;
+    padding: 0;
+    margin: 0;
+    background: #2d2d30;
+    overflow: auto;
+    border: none;
+    border-radius: 0 0 8px 8px;
+}
+
+#file-viewer-code {
+    display: block;
+    padding: 20px;
+    margin: 0;
+    background: transparent;
+    color: #e6edf3;
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: none;
+}
+
+/* Override Prism theme colors to match our dark theme */
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+    color: #6a9955 !important;
+}
+
+.token.punctuation {
+    color: #d4d4d4 !important;
+}
+
+.token.property,
+.token.tag,
+.token.boolean,
+.token.number,
+.token.constant,
+.token.symbol,
+.token.deleted {
+    color: #b5cea8 !important;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+    color: #ce9178 !important;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string {
+    color: #d4d4d4 !important;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.keyword {
+    color: #569cd6 !important;
+}
+
+.token.function,
+.token.class-name {
+    color: #dcdcaa !important;
+}
+
+.token.regex,
+.token.important,
+.token.variable {
+    color: #d16969 !important;
+}
+
+/* Mobile modal adjustments */
+@media (max-width: 768px) {
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        max-width: 100%;
+        max-height: 100%;
+        width: 100%;
+        height: 100%;
+    }
+    
+    .modal-header {
+        padding: 10px 15px;
+    }
+    
+    #file-viewer-content {
+        padding: 15px;
+        font-size: 12px;
+    }
 }
