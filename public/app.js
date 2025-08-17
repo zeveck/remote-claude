@@ -300,6 +300,9 @@ class RemoteClaudeApp {
     }
     
     handleBackToDirectory() {
+        // Store the current directory path to restore selection
+        const previousDirectoryPath = this.initialDirectoryPath;
+        
         // Clear the current directory context
         this.currentDirectory = null;
         this.currentDirectoryPath = null;
@@ -317,8 +320,8 @@ class RemoteClaudeApp {
         // Show directory selection screen
         this.showDirectorySelection();
         
-        // Reload directories to ensure fresh list
-        this.loadDirectories();
+        // Reload directories and restore previous selection
+        this.loadDirectories(previousDirectoryPath);
         
         // Update browser history
         history.pushState({ section: 'directory' }, '', '#directory');
@@ -444,13 +447,13 @@ class RemoteClaudeApp {
     }
     
     // Directory and File Management Methods
-    async loadDirectories() {
+    async loadDirectories(defaultPath = null) {
         try {
             const response = await fetch('/api/directories');
             const data = await response.json();
             
             if (data.success) {
-                this.populateDirectorySelect(data.directories);
+                this.populateDirectorySelect(data.directories, defaultPath);
             } else {
                 this.updateStatus(`Failed to load directories: ${data.error}`, 'error');
             }
@@ -460,7 +463,7 @@ class RemoteClaudeApp {
         }
     }
     
-    populateDirectorySelect(directories) {
+    populateDirectorySelect(directories, defaultPath = null) {
         const select = document.getElementById('directory-select');
         select.innerHTML = '';
         
@@ -470,14 +473,30 @@ class RemoteClaudeApp {
             return;
         }
         
-        // Default to first directory
+        let hasDefaultSelection = false;
+        
+        // Populate directories and select the default if provided
         directories.forEach((dir, index) => {
             const option = document.createElement('option');
             option.value = dir.fullPath;
             option.textContent = dir.name;
-            if (index === 0) option.selected = true;
+            
+            // Select this option if it matches the default path, otherwise select first
+            if (defaultPath && dir.fullPath === defaultPath) {
+                option.selected = true;
+                hasDefaultSelection = true;
+            } else if (!defaultPath && index === 0) {
+                option.selected = true;
+                hasDefaultSelection = true;
+            }
+            
             select.appendChild(option);
         });
+        
+        // If no default was found, select the first directory
+        if (!hasDefaultSelection && directories.length > 0) {
+            select.children[0].selected = true;
+        }
         
         // Enable the button since we have a default selection
         document.getElementById('select-directory-btn').disabled = false;
