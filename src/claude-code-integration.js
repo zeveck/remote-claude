@@ -225,10 +225,14 @@ class ClaudeCodeIntegration {
 
             // Spawn claude process in headless mode with -p flag and skip permissions
             const args = ['-p', '--output-format', 'json', '--dangerously-skip-permissions'];
-            const child = spawn('claude', args, {
+            
+            // Construct command safely to avoid deprecation warning
+            // Pass the full command as a single string when using shell
+            const command = `claude ${args.join(' ')}`;
+            const child = spawn(command, [], {
                 cwd: sandbox.workingDirectory,
                 env: sandbox.createEnvironment(),
-                shell: true, // Enable shell to find claude in PATH
+                shell: true,
                 windowsHide: true
             });
 

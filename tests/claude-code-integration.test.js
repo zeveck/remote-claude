@@ -374,8 +374,8 @@ describe('ClaudeCodeIntegration', () => {
 
       const promise = integration.executeWithClaude(mockRequest, mockSandbox);
       
-      expect(spawn).toHaveBeenCalledWith('claude', 
-        ['-p', '--output-format', 'json', '--dangerously-skip-permissions'],
+      expect(spawn).toHaveBeenCalledWith('claude -p --output-format json --dangerously-skip-permissions', 
+        [],
         {
           cwd: mockSandbox.workingDirectory,
           env: { TEST: 'env' },
