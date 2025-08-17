@@ -12,17 +12,29 @@ class AuthMiddleware {
    * Create session middleware
    */
   createSessionMiddleware() {
+    // Generate secure session secret if not configured
+    const sessionSecret = this.config.auth.sessionSecret || this.generateSessionSecret();
+    
     return session({
-      secret: this.config.auth.sessionSecret,
+      secret: sessionSecret,
       resave: false,
       saveUninitialized: false,
       cookie: {
         secure: true, // HTTPS only
         httpOnly: true, // Prevent XSS
-        maxAge: this.config.auth.sessionTimeout
+        maxAge: this.config.auth.sessionTimeout,
+        sameSite: 'strict' // CSRF protection
       },
       name: 'claude-session' // Custom session name
     });
+  }
+
+  /**
+   * Generate a secure session secret
+   */
+  generateSessionSecret() {
+    const crypto = require('crypto');
+    return crypto.randomBytes(64).toString('hex');
   }
 
   /**

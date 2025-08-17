@@ -3,27 +3,83 @@ const https = require('https');
 const path = require('path');
 const SSLManager = require('./ssl-manager');
 const AuthMiddleware = require('./auth-middleware');
+const ValidationMiddleware = require('./validation-middleware');
+const { logger } = require('./logger');
 
 // Load configuration
 const config = require('../config/default.json');
 
 const app = express();
 const PORT = config.server.port || 3443;
-const HOST = config.server.host || '0.0.0.0';
+
+const NetworkUtils = require('./network-utils');
+
+// Determine host based on configuration
+let HOST;
+if (config.server.allowNetworkAccess) {
+  HOST = config.server.host === 'auto' ? NetworkUtils.getPrimaryNetworkIP() : config.server.host;
+  if (HOST !== '127.0.0.1') {
+    logger.info('🌐 Network access enabled - binding to specific interface');
+    logger.info(`📍 Primary network IP: ${HOST}`);
+    logger.warn('⚠️  Access restricted to local network IPs only');
+  }
+} else {
+  HOST = '127.0.0.1';
+  logger.info('🔒 Local access only - binding to localhost');
+}
 
 // Initialize managers
 const sslManager = new SSLManager(config);
 const authMiddleware = new AuthMiddleware(config);
 
+// Security middleware
+const helmet = require('helmet');
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false
+}));
+
 // Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' })); // Limit request size
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Session middleware
 app.use(authMiddleware.createSessionMiddleware());
 
 // Trust proxy for rate limiting (if behind reverse proxy)
 app.set('trust proxy', 1);
+
+// Additional security for network access
+if (config.server.allowNetworkAccess && HOST !== '127.0.0.1') {
+  // Add IP whitelist middleware for local network only
+  app.use((req, res, next) => {
+    const clientIP = req.ip || req.connection.remoteAddress;
+    
+    const isAllowed = NetworkUtils.isLocalNetworkIP(clientIP);
+    
+    if (!isAllowed) {
+      logger.warn('Blocked access from non-local IP', { ip: clientIP });
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied: Local network access only'
+      });
+    }
+    
+    next();
+  });
+}
 
 // Static files (public access)
 app.use(express.static(path.join(__dirname, '../public')));
@@ -68,7 +124,11 @@ app.get('/api/directories', authMiddleware.requireAuth(), (req, res) => {
   }
 });
 
-app.post('/api/select-directory', authMiddleware.requireAuth(), (req, res) => {
+app.post('/api/select-directory', 
+  authMiddleware.requireAuth(), 
+  ValidationMiddleware.requireFields(['directoryPath']),
+  ValidationMiddleware.validatePath('directoryPath'),
+  (req, res) => {
   try {
     const { directoryPath } = req.body;
 
@@ -138,7 +198,10 @@ app.get('/api/files', authMiddleware.requireAuth(), (req, res) => {
   }
 });
 
-app.get('/api/file-content', authMiddleware.requireAuth(), (req, res) => {
+app.get('/api/file-content', 
+  authMiddleware.requireAuth(), 
+  ValidationMiddleware.validatePath('filePath'),
+  (req, res) => {
   try {
     const { filePath } = req.query;
 
@@ -165,7 +228,12 @@ app.get('/api/file-content', authMiddleware.requireAuth(), (req, res) => {
 });
 
 // Claude Code execution endpoint
-app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
+app.post('/api/command', 
+  authMiddleware.requireAuth(), 
+  ValidationMiddleware.requireFields(['action', 'prompt']),
+  ValidationMiddleware.sanitizeStrings(['action', 'prompt']),
+  ValidationMiddleware.rateLimit(20, 60000), // 20 requests per minute
+  async (req, res) => {
   try {
     const { action, prompt, options = {} } = req.body;
     const currentDirectory = req.session.currentDirectory;
@@ -211,7 +279,7 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Claude Code execution error:', error);
+    logger.error('Claude Code execution error', { error: error.message, stack: error.stack });
 
     // Handle specific error types
     if (error.message.includes('Rate limit exceeded')) {
@@ -253,7 +321,7 @@ function startServer() {
   try {
     // Check if certificates exist, generate if needed
     if (sslManager.needsRegeneration()) {
-      console.log('SSL certificates not found or invalid, generating new ones...');
+      logger.info('SSL certificates not found or invalid, generating new ones...');
       sslManager.generateCertificates();
     }
 
@@ -267,29 +335,28 @@ function startServer() {
       const os = require('os');
       const interfaces = os.networkInterfaces();
 
-      console.log(`🔒 HTTPS Server running successfully!`);
-      console.log(`\n📍 Access URLs:`);
-      console.log(`   Local:    https://localhost:${PORT}`);
+      logger.info('🔒 HTTPS Server running successfully!');
+      logger.info(`📍 Local access: https://localhost:${PORT}`);
 
       // Find and display actual IP addresses
       Object.keys(interfaces).forEach(name => {
         interfaces[name].forEach(iface => {
           if (iface.family === 'IPv4' && !iface.internal) {
-            console.log(`   Network:  https://${iface.address}:${PORT}`);
+            logger.info(`📍 Network access: https://${iface.address}:${PORT}`);
           }
         });
       });
 
-      console.log(`\n📱 Use the Network URL to access from your phone`);
-      console.log('⚠️  You may need to accept the self-signed certificate warning');
+      logger.info('📱 Use the Network URL to access from your phone');
+      logger.warn('⚠️  You may need to accept the self-signed certificate warning');
     });
 
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${PORT} is already in use`);
+        logger.error(`❌ Port ${PORT} is already in use`);
         process.exit(1);
       } else {
-        console.error('❌ Server error:', error.message);
+        logger.error('❌ Server error', { error: error.message });
         process.exit(1);
       }
     });
@@ -297,8 +364,8 @@ function startServer() {
     return server;
 
   } catch (error) {
-    console.error('❌ Failed to start HTTPS server:', error.message);
-    console.log('\n💡 Try running: npm run setup');
+    logger.error('❌ Failed to start HTTPS server', { error: error.message });
+    logger.info('💡 Try running: npm run setup');
     process.exit(1);
   }
 }

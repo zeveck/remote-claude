@@ -226,9 +226,14 @@ class ClaudeCodeIntegration {
             // Spawn claude process in headless mode with -p flag and skip permissions
             const args = ['-p', '--output-format', 'json', '--dangerously-skip-permissions'];
             
-            // Construct command safely to avoid deprecation warning
-            // Pass the full command as a single string when using shell
-            const command = `claude ${args.join(' ')}`;
+            // Construct command safely to avoid deprecation warning and injection
+            // Validate args are safe (no shell metacharacters)
+            const safeArgs = args.filter(arg => /^[a-zA-Z0-9\-_]+$/.test(arg));
+            if (safeArgs.length !== args.length) {
+                throw new Error('Invalid command arguments detected');
+            }
+            
+            const command = `claude ${safeArgs.join(' ')}`;
             const child = spawn(command, [], {
                 cwd: sandbox.workingDirectory,
                 env: sandbox.createEnvironment(),

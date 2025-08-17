@@ -9,115 +9,115 @@ class RemoteClaudeApp {
         this.logoutBtn = document.getElementById('logout-btn');
         this.loginError = document.getElementById('login-error');
         this.currentDirectoryName = document.getElementById('current-directory-name');
-        
+
         // Initialize status div (will be created dynamically)
         this.statusDiv = null;
-        
+
         // Auto-refresh timer
         this.refreshTimer = null;
         this.isWindowVisible = true;
-        
+
         // Conversation tracking
         this.conversationHistory = [];
         this.currentDirectory = null;
         this.currentDirectoryPath = null;
         this.initialDirectoryPath = null;
         this.sessionStartTime = new Date().toISOString();
-        
+
         this.init();
     }
-    
+
     async init() {
         console.log('Remote Claude Web Interface loaded');
-        
+
         // Set up event listeners first
         this.setupEventListeners();
-        
+
         // Set up visibility change listener for auto-refresh
         this.setupVisibilityListener();
-        
+
         // Fix mobile viewport height issues
         this.fixMobileViewport();
-        
+
         // Check authentication status
         await this.checkAuthStatus();
     }
-    
+
     fixMobileViewport() {
         // Apply viewport fix for all devices to ensure consistency
         const setViewportHeight = () => {
             const vh = window.innerHeight * 0.01;
             document.documentElement.style.setProperty('--vh', `${vh}px`);
         };
-        
+
         setViewportHeight();
         window.addEventListener('resize', setViewportHeight);
         window.addEventListener('orientationchange', setViewportHeight);
-        
+
         // Also fix on window focus (helps with mobile browser address bar changes)
         window.addEventListener('focus', setViewportHeight);
     }
-    
+
     async initializeApp() {
         // Load directories after successful authentication
         await this.loadDirectories();
     }
-    
+
     setupEventListeners() {
         // Login form - handle both form submit and button click
         this.loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleLogin();
         });
-        
+
         // Login button click
         this.loginBtn.addEventListener('click', () => {
             this.handleLogin();
         });
-        
+
         // Logout button
         this.logoutBtn.addEventListener('click', () => {
             this.handleLogout();
         });
-        
+
         // Back to directory selection button
         document.getElementById('back-to-directory-btn').addEventListener('click', () => {
             this.handleBackToDirectory();
         });
-        
+
         // Back directory button (go up one level)
         document.getElementById('back-directory-btn').addEventListener('click', () => {
             this.handleBackDirectory();
         });
-        
+
         // Enter key on password field
         document.getElementById('password').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.handleLogin();
             }
         });
-        
+
         // Directory selection
         document.getElementById('select-directory-btn').addEventListener('click', () => {
             this.handleDirectorySelection();
         });
-        
+
         document.getElementById('directory-select').addEventListener('change', (e) => {
             const btn = document.getElementById('select-directory-btn');
             btn.disabled = !e.target.value;
         });
-        
+
         document.getElementById('directory-select').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 this.handleDirectorySelection();
             }
         });
-        
+
         document.getElementById('logout-from-dir-btn').addEventListener('click', () => {
             this.handleLogout();
         });
-        
+
         // Global Enter key handler
         document.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -131,19 +131,19 @@ class RemoteClaudeApp {
                 }
             }
         });
-        
+
         // File browser toggle
         document.getElementById('toggle-files-btn').addEventListener('click', () => {
             this.toggleFileBrowser();
         });
-        
 
-        
+
+
         // Claude interface
         document.getElementById('send-claude-btn').addEventListener('click', () => {
             this.sendClaudeCommand();
         });
-        
+
         document.getElementById('claude-input').addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.ctrlKey) {
                 e.preventDefault();
@@ -153,46 +153,46 @@ class RemoteClaudeApp {
             // Auto-resize textarea
             this.autoResizeTextarea(e.target);
         });
-        
+
         document.getElementById('claude-input').addEventListener('input', (e) => {
             this.autoResizeTextarea(e.target);
         });
-        
+
         // Download conversation button
         document.getElementById('download-conversation-btn').addEventListener('click', () => {
             this.downloadConversation();
         });
-        
+
         // File viewer modal
         document.getElementById('close-file-viewer').addEventListener('click', () => {
             this.closeFileViewer();
         });
-        
+
         // Close modal when clicking outside
         document.getElementById('file-viewer-modal').addEventListener('click', (e) => {
             if (e.target.id === 'file-viewer-modal') {
                 this.closeFileViewer();
             }
         });
-        
+
         // Close modal with Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.closeFileViewer();
             }
         });
-        
+
         // Handle browser back button
         window.addEventListener('popstate', (e) => {
             this.handleBrowserNavigation(e);
         });
     }
-    
+
     async checkAuthStatus() {
         try {
             const response = await fetch('/api/auth-status');
             const data = await response.json();
-            
+
             if (data.authenticated) {
                 this.showDirectorySelection();
                 await this.initializeApp();
@@ -205,18 +205,18 @@ class RemoteClaudeApp {
             this.showLoginSection();
         }
     }
-    
+
     async handleLogin() {
         const password = document.getElementById('password').value;
-        
+
         if (!password) {
             this.showLoginError('Please enter a password');
             return;
         }
-        
+
         this.setLoading(true);
         this.clearLoginError();
-        
+
         try {
             const response = await fetch('/api/login', {
                 method: 'POST',
@@ -225,9 +225,9 @@ class RemoteClaudeApp {
                 },
                 body: JSON.stringify({ password })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showDirectorySelection();
                 document.getElementById('password').value = '';
@@ -242,15 +242,15 @@ class RemoteClaudeApp {
             this.setLoading(false);
         }
     }
-    
+
     async handleLogout() {
         try {
             const response = await fetch('/api/logout', {
                 method: 'POST'
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showLoginSection();
                 this.updateStatus('Logged out successfully', 'info');
@@ -263,79 +263,79 @@ class RemoteClaudeApp {
             this.showLoginSection();
         }
     }
-    
+
     showLoginSection() {
         this.loginSection.classList.remove('hidden');
         this.directorySection.classList.add('hidden');
         this.appSection.classList.add('hidden');
         document.getElementById('password').focus();
-        
+
         // Update browser history
         history.replaceState({ section: 'login' }, '', '#login');
     }
-    
+
     showDirectorySelection() {
         this.loginSection.classList.add('hidden');
         this.directorySection.classList.remove('hidden');
         this.appSection.classList.add('hidden');
-        
+
         // Auto-focus the directory dropdown
         setTimeout(() => {
             document.getElementById('directory-select').focus();
         }, 100);
-        
+
         // Update browser history
         history.replaceState({ section: 'directory' }, '', '#directory');
     }
-    
+
     showAppSection() {
         this.loginSection.classList.add('hidden');
         this.directorySection.classList.add('hidden');
         this.appSection.classList.remove('hidden');
-        
+
         // Only auto-focus on desktop to prevent mobile keyboard popup
         if (!this.isMobileDevice()) {
             document.getElementById('claude-input').focus();
         }
     }
-    
+
     handleBackToDirectory() {
         // Store the current directory path to restore selection
         const previousDirectoryPath = this.initialDirectoryPath;
-        
+
         // Save current conversation before leaving (it's already saved, but this ensures it's up to date)
         this.saveConversationToStorage();
-        
+
         // Clear the current directory context
         this.currentDirectory = null;
         this.currentDirectoryPath = null;
         this.initialDirectoryPath = null;
         this.currentDirectoryName.textContent = 'Remote Claude';
-        
+
         // Clear conversation history for the new session (but keep in localStorage)
         this.conversationHistory = [];
         this.sessionStartTime = new Date().toISOString();
-        
+
         // Update download button visibility
         this.updateDownloadButtonVisibility();
-        
+
         // Clear the terminal output
         const output = document.getElementById('claude-output');
         output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
-        
+
         // Show directory selection screen
         this.showDirectorySelection();
-        
+
         // Reload directories and restore previous selection
         this.loadDirectories(previousDirectoryPath);
-        
+
         // Update browser history
         history.pushState({ section: 'directory' }, '', '#directory');
     }
-    
+
     handleBrowserNavigation(e) {
         const state = e.state;
-        
+
         // Check if file viewer modal is open first
         const modal = document.getElementById('file-viewer-modal');
         if (modal && !modal.classList.contains('hidden')) {
@@ -345,7 +345,7 @@ class RemoteClaudeApp {
             history.pushState({ section: 'app', directory: this.currentDirectory }, '', '#app');
             return;
         }
-        
+
         if (state && state.section === 'directory') {
             // User pressed back button while in Claude interface
             if (!this.appSection.classList.contains('hidden')) {
@@ -364,23 +364,23 @@ class RemoteClaudeApp {
             }
         }
     }
-    
+
     async handleBackDirectory() {
         if (!this.currentDirectoryPath) {
             return;
         }
-        
+
         // Calculate parent directory path
         const pathParts = this.currentDirectoryPath.split(/[/\\]/);
         if (pathParts.length <= 1) {
             // Already at root, disable the button or do nothing
             return;
         }
-        
+
         // Remove the last part to go up one level
         pathParts.pop();
         const parentPath = pathParts.join('/');
-        
+
         // Navigate to parent directory
         try {
             const response = await fetch('/api/select-directory', {
@@ -390,9 +390,9 @@ class RemoteClaudeApp {
                 },
                 body: JSON.stringify({ directoryPath: parentPath })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
@@ -405,48 +405,48 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to navigate up directory', 'error');
         }
     }
-    
+
     updateBackButtonState() {
         const backBtn = document.getElementById('back-directory-btn');
         if (!backBtn) return;
-        
+
         if (!this.currentDirectoryPath || !this.initialDirectoryPath) {
             backBtn.style.display = 'none';
             return;
         }
-        
+
         // Normalize paths for comparison (handle different separators)
         const normalizePath = (path) => path.replace(/\\/g, '/').replace(/\/+$/, '');
         const currentNormalized = normalizePath(this.currentDirectoryPath);
         const initialNormalized = normalizePath(this.initialDirectoryPath);
-        
+
         // Show button only if we're deeper than the initial selected directory
-        const isInSubdirectory = currentNormalized !== initialNormalized && 
-                                currentNormalized.startsWith(initialNormalized + '/');
-        
+        const isInSubdirectory = currentNormalized !== initialNormalized &&
+            currentNormalized.startsWith(initialNormalized + '/');
+
         backBtn.style.display = isInSubdirectory ? 'block' : 'none';
     }
-    
+
     isMobileDevice() {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
-               (window.innerWidth <= 768 && 'ontouchstart' in window);
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+            (window.innerWidth <= 768 && 'ontouchstart' in window);
     }
-    
+
     showLoginError(message) {
         this.loginError.textContent = message;
         this.loginError.style.display = 'block';
     }
-    
+
     clearLoginError() {
         this.loginError.textContent = '';
         this.loginError.style.display = 'none';
     }
-    
+
     setLoading(loading) {
         this.loginBtn.disabled = loading;
         this.loginBtn.textContent = loading ? 'Logging in...' : 'Login';
     }
-    
+
     updateStatus(message, type = 'info') {
         // Create status div if it doesn't exist
         if (!this.statusDiv) {
@@ -454,10 +454,10 @@ class RemoteClaudeApp {
             this.statusDiv.className = 'status-message';
             document.body.appendChild(this.statusDiv);
         }
-        
+
         this.statusDiv.textContent = message;
         this.statusDiv.className = `status-message ${type}`;
-        
+
         // Auto-hide after 3 seconds
         setTimeout(() => {
             if (this.statusDiv && this.statusDiv.parentNode) {
@@ -466,13 +466,13 @@ class RemoteClaudeApp {
             }
         }, 3000);
     }
-    
+
     // Directory and File Management Methods
     async loadDirectories(defaultPath = null) {
         try {
             const response = await fetch('/api/directories');
             const data = await response.json();
-            
+
             if (data.success) {
                 this.populateDirectorySelect(data.directories, defaultPath);
             } else {
@@ -483,25 +483,25 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to load directories', 'error');
         }
     }
-    
+
     populateDirectorySelect(directories, defaultPath = null) {
         const select = document.getElementById('directory-select');
         select.innerHTML = '';
-        
+
         if (directories.length === 0) {
             select.innerHTML = '<option value="">No directories configured</option>';
             this.showStatus('No directories configured. Use "npm run add-directory" to add directories.', 'error');
             return;
         }
-        
+
         let hasDefaultSelection = false;
-        
+
         // Populate directories and select the default if provided
         directories.forEach((dir, index) => {
             const option = document.createElement('option');
             option.value = dir.fullPath;
             option.textContent = dir.name;
-            
+
             // Select this option if it matches the default path, otherwise select first
             if (defaultPath && dir.fullPath === defaultPath) {
                 option.selected = true;
@@ -510,27 +510,27 @@ class RemoteClaudeApp {
                 option.selected = true;
                 hasDefaultSelection = true;
             }
-            
+
             select.appendChild(option);
         });
-        
+
         // If no default was found, select the first directory
         if (!hasDefaultSelection && directories.length > 0) {
             select.children[0].selected = true;
         }
-        
+
         // Enable the button since we have a default selection
         document.getElementById('select-directory-btn').disabled = false;
     }
-    
+
     async handleDirectorySelection() {
         const select = document.getElementById('directory-select');
         const directoryPath = select.value;
-        
+
         if (!directoryPath) {
             return;
         }
-        
+
         try {
             const response = await fetch('/api/select-directory', {
                 method: 'POST',
@@ -539,16 +539,16 @@ class RemoteClaudeApp {
                 },
                 body: JSON.stringify({ directoryPath })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.showAppSection();
                 this.currentDirectoryName.textContent = data.directory.name;
                 this.currentDirectory = data.directory.name;
                 this.currentDirectoryPath = data.directory.path;
                 this.initialDirectoryPath = data.directory.path; // Store the initial selected directory
-                
+
                 // Load stored conversation for this directory
                 const hasStoredConversation = this.loadConversationFromStorage();
                 if (!hasStoredConversation) {
@@ -556,9 +556,9 @@ class RemoteClaudeApp {
                     this.conversationHistory = [];
                     this.sessionStartTime = new Date().toISOString();
                 }
-                
+
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
-                
+
                 // Update browser history
                 history.pushState({ section: 'app', directory: data.directory.name }, '', '#app');
             } else {
@@ -569,30 +569,30 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to select directory', 'error');
         }
     }
-    
+
     showFilesBrowser(directory, breadcrumbs) {
         const fileBrowser = document.getElementById('file-browser');
         fileBrowser.classList.remove('hidden');
-        
+
         // Ensure the file list container doesn't have empty class when showing files
         const fileListContainer = document.querySelector('.file-list-container');
         if (fileListContainer) {
             fileListContainer.classList.remove('empty');
         }
-        
+
         this.renderFileList(directory);
         this.updateBackButtonState();
     }
-    
+
     showClaudeInterface() {
         const claudeInterface = document.getElementById('claude-interface');
         claudeInterface.classList.remove('hidden');
     }
-    
+
     renderBreadcrumbs(breadcrumbs) {
         const breadcrumbsDiv = document.getElementById('breadcrumbs');
         breadcrumbsDiv.innerHTML = '';
-        
+
         breadcrumbs.forEach((crumb, index) => {
             if (index > 0) {
                 const separator = document.createElement('span');
@@ -600,43 +600,43 @@ class RemoteClaudeApp {
                 separator.textContent = '/';
                 breadcrumbsDiv.appendChild(separator);
             }
-            
+
             const crumbElement = document.createElement('span');
             crumbElement.className = index === breadcrumbs.length - 1 ? 'breadcrumb-item current' : 'breadcrumb-item';
             crumbElement.textContent = crumb.name;
-            
+
             if (index < breadcrumbs.length - 1) {
                 crumbElement.addEventListener('click', () => {
                     this.navigateToDirectory(crumb.path);
                 });
             }
-            
+
             breadcrumbsDiv.appendChild(crumbElement);
         });
     }
-    
+
     renderFileList(directory) {
         const fileList = document.getElementById('file-list');
         const fileListContainer = document.getElementById('file-list').parentElement;
         fileList.innerHTML = '';
-        
+
         if (directory.contents.length === 0) {
             fileList.innerHTML = '<div class="placeholder">Directory is empty</div>';
             fileListContainer.classList.add('empty');
             return;
         }
-        
+
         // Remove empty class when there are files
         fileListContainer.classList.remove('empty');
-        
+
         directory.contents.forEach(item => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
-            
+
             const icon = this.getFileIcon(item);
             const size = item.type === 'file' ? this.formatFileSize(item.size) : '';
             const modified = new Date(item.modified).toLocaleDateString();
-            
+
             fileItem.innerHTML = `
                 <div class="file-icon">${icon}</div>
                 <div class="file-info">
@@ -647,7 +647,7 @@ class RemoteClaudeApp {
                     </div>
                 </div>
             `;
-            
+
             if (item.type === 'directory') {
                 fileItem.addEventListener('click', () => {
                     this.navigateToDirectory(item.path);
@@ -657,16 +657,16 @@ class RemoteClaudeApp {
                     this.viewFile(item.path);
                 });
             }
-            
+
             fileList.appendChild(fileItem);
         });
     }
-    
+
     getFileIcon(item) {
         if (item.type === 'directory') {
             return '📁';
         }
-        
+
         const ext = item.extension;
         const iconMap = {
             '.js': '📄',
@@ -682,20 +682,20 @@ class RemoteClaudeApp {
             '.gif': '🖼️',
             '.pdf': '📕'
         };
-        
+
         return iconMap[ext] || '📄';
     }
-    
+
     formatFileSize(bytes) {
         if (bytes === 0) return '0 B';
-        
+
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
+
         return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
-    
+
     async navigateToDirectory(directoryPath) {
         try {
             const response = await fetch('/api/select-directory', {
@@ -705,9 +705,9 @@ class RemoteClaudeApp {
                 },
                 body: JSON.stringify({ directoryPath })
             });
-            
+
             const data = await response.json();
-            
+
             if (data.success) {
                 this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
@@ -720,12 +720,12 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to navigate to directory', 'error');
         }
     }
-    
+
     async refreshFiles() {
         try {
             const response = await fetch('/api/files');
             const data = await response.json();
-            
+
             if (data.success) {
                 this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
@@ -738,12 +738,12 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to refresh files', 'error');
         }
     }
-    
+
     async viewFile(filePath) {
         try {
             const response = await fetch(`/api/file-content?filePath=${encodeURIComponent(filePath)}`);
             const data = await response.json();
-            
+
             if (data.success) {
                 const file = data.file;
                 if (file.binary) {
@@ -759,30 +759,30 @@ class RemoteClaudeApp {
             this.updateStatus('Failed to view file', 'error');
         }
     }
-    
+
     showFileViewer(file) {
         const modal = document.getElementById('file-viewer-modal');
         const title = document.getElementById('file-viewer-title');
         const codeElement = document.getElementById('file-viewer-code');
-        
+
         title.textContent = `${file.name} (${this.formatFileSize(file.size)})`;
-        
+
         const content = file.content || 'File is empty';
         const language = this.detectLanguage(file.name);
-        
+
         // Set the language class for Prism.js
         codeElement.className = language ? `language-${language}` : '';
         codeElement.textContent = content;
-        
+
         // Apply syntax highlighting if Prism is available
         if (window.Prism && language) {
             window.Prism.highlightElement(codeElement);
         }
-        
+
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden'; // Prevent background scrolling
     }
-    
+
     detectLanguage(filename) {
         const ext = filename.toLowerCase().split('.').pop();
         const languageMap = {
@@ -813,43 +813,43 @@ class RemoteClaudeApp {
             'rs': 'rust',
             'rb': 'ruby'
         };
-        
+
         return languageMap[ext] || null;
     }
-    
+
     closeFileViewer() {
         const modal = document.getElementById('file-viewer-modal');
         modal.classList.add('hidden');
         document.body.style.overflow = ''; // Restore scrolling
     }
-    
+
     // UI Helper Methods
     toggleFileBrowser() {
         const fileBrowser = document.getElementById('file-browser');
         fileBrowser.classList.toggle('hidden');
-        
+
         // The new flexbox layout handles height automatically
         // No manual height calculations needed
     }
-    
+
     setupVisibilityListener() {
         document.addEventListener('visibilitychange', () => {
             this.isWindowVisible = !document.hidden;
-            
+
             if (this.isWindowVisible && this.appSection && !this.appSection.classList.contains('hidden')) {
                 // Refresh immediately when window becomes visible
                 this.refreshFiles();
             }
         });
     }
-    
 
-    
+
+
     autoResizeTextarea(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
     }
-    
+
     formatClaudeResponse(content) {
         // Escape HTML to prevent XSS attacks
         const escapeHtml = (text) => {
@@ -857,21 +857,21 @@ class RemoteClaudeApp {
             div.textContent = text;
             return div.innerHTML;
         };
-        
+
         // Escape the content first
         let formatted = escapeHtml(content);
-        
+
         // Convert **text** to <strong>text</strong>
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
+
         return formatted;
     }
-    
+
     addToTerminal(content, type = 'output') {
         const output = document.getElementById('claude-output');
         const entry = document.createElement('div');
         entry.className = `terminal-entry ${type}`;
-        
+
         if (type === 'command') {
             entry.innerHTML = `<span class="prompt-symbol">$</span> ${content}`;
             entry.style.color = '#00d4aa';
@@ -886,14 +886,14 @@ class RemoteClaudeApp {
             entry.innerHTML = formattedContent;
             entry.style.marginBottom = '15px';
         }
-        
+
         output.appendChild(entry);
         output.scrollTop = output.scrollHeight;
-        
+
         // Return the element so it can be modified later
         return entry;
     }
-    
+
     formatClaudeResponse(content) {
         // Escape HTML first to prevent XSS
         const escaped = content
@@ -902,55 +902,55 @@ class RemoteClaudeApp {
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
-        
+
         // Convert **text** to <strong>text</strong>
         const formatted = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-        
+
         return formatted;
     }
-    
+
     async sendClaudeCommand() {
         const input = document.getElementById('claude-input');
         const command = input.value.trim();
-        
+
         if (!command) {
             return;
         }
-        
+
         // Handle special commands
         if (command === '/clear') {
             // Add command to terminal first
             this.addToTerminal(command, 'command');
-            
+
             // Clear conversation and display
             this.clearCurrentConversation();
-            
+
             // Clear input
             input.value = '';
             input.style.height = 'auto';
-            
+
             return;
         }
-        
+
         // Track user command in conversation history
         this.addToConversationHistory('user', command);
-        
+
         // Add command to terminal
         this.addToTerminal(command, 'command');
-        
+
         // Clear input and reset height
         input.value = '';
         input.style.height = 'auto';
-        
+
         // Disable send button and show loading with spinner
         const sendBtn = document.getElementById('send-claude-btn');
         sendBtn.disabled = true;
         sendBtn.textContent = 'Executing...';
-        
+
         const loadingMessage = '<span class="spinner"></span>Executing Claude Code command...';
         const loadingElement = this.addToTerminal(loadingMessage, 'loading');
         this.addToConversationHistory('system', 'Executing Claude Code command...');
-        
+
         try {
             const response = await fetch('/api/command', {
                 method: 'POST',
@@ -963,21 +963,21 @@ class RemoteClaudeApp {
                     options: {}
                 })
             });
-            
+
             const data = await response.json();
-            
+
             // Remove loading spinner and re-enable send button
             if (loadingElement) {
                 loadingElement.remove();
             }
             sendBtn.disabled = false;
             sendBtn.textContent = 'Send';
-            
+
             if (data.success) {
                 const successMessage = '✅ Command completed successfully';
                 this.addToTerminal(successMessage);
                 this.addToConversationHistory('system', successMessage);
-                
+
                 let claudeResponse = '';
                 if (data.result.parsedOutput) {
                     if (data.result.parsedOutput.type === 'result') {
@@ -996,25 +996,25 @@ class RemoteClaudeApp {
                     claudeResponse = data.result.output;
                     this.addToTerminal(claudeResponse);
                 }
-                
+
                 // Track Claude's response in conversation history
                 this.addToConversationHistory('claude', claudeResponse);
-                
+
                 // Refresh files to show any changes
                 this.refreshFiles();
-                
+
             } else {
                 const errorMessage = `❌ Error: ${data.error}`;
                 this.addToTerminal(errorMessage);
-                
+
                 if (data.needsDirectorySelection) {
                     this.addToTerminal('Please select a working directory first.');
                 }
-                
+
                 // Track error in conversation history
                 this.addToConversationHistory('system', errorMessage);
             }
-            
+
         } catch (error) {
             // Remove loading spinner and re-enable send button
             if (loadingElement) {
@@ -1022,16 +1022,16 @@ class RemoteClaudeApp {
             }
             sendBtn.disabled = false;
             sendBtn.textContent = 'Send';
-            
+
             console.error('Claude Code execution error:', error);
             const errorMessage = `❌ Connection error: ${error.message}`;
             this.addToTerminal(errorMessage);
-            
+
             // Track connection error in conversation history
             this.addToConversationHistory('system', errorMessage);
         }
     }
-    
+
     addToConversationHistory(role, content) {
         this.conversationHistory.push({
             role: role, // 'user', 'claude', or 'system'
@@ -1039,22 +1039,22 @@ class RemoteClaudeApp {
             timestamp: new Date().toISOString(),
             directory: this.currentDirectory
         });
-        
+
         // Save to localStorage
         this.saveConversationToStorage();
-        
+
         // Update download button visibility
         this.updateDownloadButtonVisibility();
     }
-    
+
     getStorageKey() {
         // Create a unique key for this directory
         return `claude-conversation-${this.initialDirectoryPath || 'unknown'}`;
     }
-    
+
     saveConversationToStorage() {
         if (!this.initialDirectoryPath) return;
-        
+
         try {
             const conversationData = {
                 history: this.conversationHistory,
@@ -1063,53 +1063,53 @@ class RemoteClaudeApp {
                 directory: this.currentDirectory,
                 directoryPath: this.initialDirectoryPath
             };
-            
+
             localStorage.setItem(this.getStorageKey(), JSON.stringify(conversationData));
         } catch (error) {
             console.warn('Failed to save conversation to localStorage:', error);
         }
     }
-    
+
     loadConversationFromStorage() {
         if (!this.initialDirectoryPath) return false;
-        
+
         try {
             const stored = localStorage.getItem(this.getStorageKey());
             if (!stored) return false;
-            
+
             const conversationData = JSON.parse(stored);
-            
+
             // Restore conversation history
             this.conversationHistory = conversationData.history || [];
             this.sessionStartTime = conversationData.sessionStartTime || new Date().toISOString();
-            
+
             // Restore terminal display
             this.restoreTerminalFromHistory();
-            
+
             // Update download button visibility
             this.updateDownloadButtonVisibility();
-            
+
             return true;
         } catch (error) {
             console.warn('Failed to load conversation from localStorage:', error);
             return false;
         }
     }
-    
+
     clearConversationFromStorage() {
         if (!this.initialDirectoryPath) return;
-        
+
         try {
             localStorage.removeItem(this.getStorageKey());
         } catch (error) {
             console.warn('Failed to clear conversation from localStorage:', error);
         }
     }
-    
+
     restoreTerminalFromHistory() {
         const output = document.getElementById('claude-output');
         output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
-        
+
         // Replay conversation history in terminal
         this.conversationHistory.forEach(entry => {
             if (entry.role === 'user') {
@@ -1121,39 +1121,39 @@ class RemoteClaudeApp {
             }
         });
     }
-    
+
     clearCurrentConversation() {
         // Clear from localStorage
         this.clearConversationFromStorage();
-        
+
         // Clear from memory
         this.conversationHistory = [];
         this.sessionStartTime = new Date().toISOString();
-        
+
         // Clear terminal display
         const output = document.getElementById('claude-output');
         output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
-        
+
         // Update download button visibility
         this.updateDownloadButtonVisibility();
-        
+
         this.updateStatus('Conversation cleared', 'info');
     }
-    
+
     updateDownloadButtonVisibility() {
         const downloadBtn = document.getElementById('download-conversation-btn');
         if (!downloadBtn) return;
-        
+
         // Show button only if there's conversation history
         downloadBtn.style.display = this.conversationHistory.length > 0 ? 'block' : 'none';
     }
-    
+
     downloadConversation() {
         if (this.conversationHistory.length === 0) {
             this.updateStatus('No conversation to download', 'info');
             return;
         }
-        
+
         const conversationData = {
             metadata: {
                 sessionStartTime: this.sessionStartTime,
@@ -1164,15 +1164,15 @@ class RemoteClaudeApp {
             },
             conversation: this.conversationHistory
         };
-        
+
         const jsonString = JSON.stringify(conversationData, null, 2);
         const blob = new Blob([jsonString], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        
+
         const directoryName = this.currentDirectory || 'unknown';
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const filename = `remote-claude.${directoryName}.${timestamp}.json`;
-        
+
         const a = document.createElement('a');
         a.href = url;
         a.download = filename;
@@ -1180,7 +1180,7 @@ class RemoteClaudeApp {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        
+
         this.updateStatus(`Conversation exported as ${filename}`, 'success');
     }
 }

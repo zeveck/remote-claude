@@ -27,7 +27,20 @@ class FileSystemManager {
    * Validate if a directory path is allowed
    */
   isDirectoryAllowed(targetPath) {
-    return this.configManager.isDirectoryAllowed(targetPath);
+    // Additional security checks
+    if (!targetPath || typeof targetPath !== 'string') {
+      return false;
+    }
+    
+    // Prevent path traversal attempts
+    if (targetPath.includes('..') || targetPath.includes('~')) {
+      return false;
+    }
+    
+    // Normalize path to prevent bypass attempts
+    const normalizedPath = path.resolve(targetPath);
+    
+    return this.configManager.isDirectoryAllowed(normalizedPath);
   }
 
   /**
