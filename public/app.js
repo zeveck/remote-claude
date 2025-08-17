@@ -730,7 +730,6 @@ class RemoteClaudeApp {
                 this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
                 this.updateBackButtonState();
-                this.updateStatus('Files refreshed', 'success');
             } else {
                 this.updateStatus(`Failed to refresh: ${data.error}`, 'error');
             }
