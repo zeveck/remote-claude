@@ -20,6 +20,8 @@ class RemoteClaudeApp {
         // Conversation tracking
         this.conversationHistory = [];
         this.currentDirectory = null;
+        this.currentDirectoryPath = null;
+        this.initialDirectoryPath = null;
         this.sessionStartTime = new Date().toISOString();
         
         this.init();
@@ -81,6 +83,11 @@ class RemoteClaudeApp {
         // Back to directory selection button
         document.getElementById('back-to-directory-btn').addEventListener('click', () => {
             this.handleBackToDirectory();
+        });
+        
+        // Back directory button (go up one level)
+        document.getElementById('back-directory-btn').addEventListener('click', () => {
+            this.handleBackDirectory();
         });
         
         // Enter key on password field
@@ -295,6 +302,8 @@ class RemoteClaudeApp {
     handleBackToDirectory() {
         // Clear the current directory context
         this.currentDirectory = null;
+        this.currentDirectoryPath = null;
+        this.initialDirectoryPath = null;
         this.currentDirectoryName.textContent = 'Remote Claude';
         
         // Clear conversation history for the new session
@@ -330,6 +339,68 @@ class RemoteClaudeApp {
                 return;
             }
         }
+    }
+    
+    async handleBackDirectory() {
+        if (!this.currentDirectoryPath) {
+            return;
+        }
+        
+        // Calculate parent directory path
+        const pathParts = this.currentDirectoryPath.split(/[/\\]/);
+        if (pathParts.length <= 1) {
+            // Already at root, disable the button or do nothing
+            return;
+        }
+        
+        // Remove the last part to go up one level
+        pathParts.pop();
+        const parentPath = pathParts.join('/');
+        
+        // Navigate to parent directory
+        try {
+            const response = await fetch('/api/select-directory', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ directoryPath: parentPath })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentDirectoryPath = data.directory.path;
+                this.renderFileList(data.directory);
+                this.updateBackButtonState();
+            } else {
+                this.updateStatus(`Failed to navigate up: ${data.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Back directory error:', error);
+            this.updateStatus('Failed to navigate up directory', 'error');
+        }
+    }
+    
+    updateBackButtonState() {
+        const backBtn = document.getElementById('back-directory-btn');
+        if (!backBtn) return;
+        
+        if (!this.currentDirectoryPath || !this.initialDirectoryPath) {
+            backBtn.style.display = 'none';
+            return;
+        }
+        
+        // Normalize paths for comparison (handle different separators)
+        const normalizePath = (path) => path.replace(/\\/g, '/').replace(/\/+$/, '');
+        const currentNormalized = normalizePath(this.currentDirectoryPath);
+        const initialNormalized = normalizePath(this.initialDirectoryPath);
+        
+        // Show button only if we're deeper than the initial selected directory
+        const isInSubdirectory = currentNormalized !== initialNormalized && 
+                                currentNormalized.startsWith(initialNormalized + '/');
+        
+        backBtn.style.display = isInSubdirectory ? 'block' : 'none';
     }
     
     isMobileDevice() {
@@ -435,6 +506,8 @@ class RemoteClaudeApp {
                 this.showAppSection();
                 this.currentDirectoryName.textContent = data.directory.name;
                 this.currentDirectory = data.directory.name;
+                this.currentDirectoryPath = data.directory.path;
+                this.initialDirectoryPath = data.directory.path; // Store the initial selected directory
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
                 
                 // Update browser history
@@ -458,8 +531,8 @@ class RemoteClaudeApp {
             fileListContainer.classList.remove('empty');
         }
         
-        this.renderBreadcrumbs(breadcrumbs);
         this.renderFileList(directory);
+        this.updateBackButtonState();
     }
     
     showClaudeInterface() {
@@ -587,8 +660,9 @@ class RemoteClaudeApp {
             const data = await response.json();
             
             if (data.success) {
-                this.renderBreadcrumbs(data.breadcrumbs);
+                this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
+                this.updateBackButtonState();
             } else {
                 this.updateStatus(`Failed to navigate: ${data.error}`, 'error');
             }
@@ -604,8 +678,9 @@ class RemoteClaudeApp {
             const data = await response.json();
             
             if (data.success) {
-                this.renderBreadcrumbs(data.breadcrumbs);
+                this.currentDirectoryPath = data.directory.path;
                 this.renderFileList(data.directory);
+                this.updateBackButtonState();
                 this.updateStatus('Files refreshed', 'success');
             } else {
                 this.updateStatus(`Failed to refresh: ${data.error}`, 'error');

@@ -260,7 +260,7 @@ button:disabled {
 
 /* File List */
 .file-list-container {
-    max-height: 400px;
+    max-height: 50vh;
     overflow-y: auto;
     border: 1px solid #eee;
     border-radius: 4px;
@@ -623,7 +623,7 @@ rectory Selection Screen */
 }
 
 .sidebar-header {
-    padding: 15px;
+    padding: 8px 12px;
     border-bottom: 1px solid #404040;
     display: flex;
     justify-content: space-between;
@@ -636,13 +636,31 @@ rectory Selection Screen */
     font-size: 14px;
 }
 
-.breadcrumbs-compact {
-    padding: 10px 15px;
-    font-size: 12px;
-    color: #b0b0b0;
-    border-bottom: 1px solid #404040;
-    background: #1a1a1a;
+.btn-back {
+    background: none;
+    border: none;
+    color: #e0e0e0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    width: auto;
+    min-width: auto;
+    line-height: 1;
 }
+
+.btn-back:hover {
+    background-color: #404040;
+}
+
+.btn-back:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background-color: transparent;
+}
+
+
 
 .file-list-container {
     flex: 1;

@@ -60,7 +60,8 @@
                         <span id="current-directory-name">Remote Claude</span>
                     </div>
                     <div class="header-controls">
-                        <button id="back-to-directory-btn" class="btn-icon" title="Back to directory selection">⬅️</button>
+                        <button id="back-to-directory-btn" class="btn-icon"
+                            title="Back to directory selection">⬅️</button>
                         <button id="toggle-files-btn" class="btn-icon" title="Toggle file browser">📁</button>
                         <button id="logout-btn" class="btn-icon" title="Logout">🚪</button>
                     </div>
@@ -86,9 +87,9 @@
                 <div id="file-browser" class="file-sidebar hidden">
                     <div class="sidebar-header">
                         <h4>Files</h4>
+                        <button id="back-directory-btn" class="btn-back" title="Go up one directory"
+                            style="display: none;">◀</button>
                     </div>
-
-                    <div id="breadcrumbs" class="breadcrumbs-compact"></div>
 
                     <div class="file-list-container">
                         <div id="file-list" class="file-list-compact">
