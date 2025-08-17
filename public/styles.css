@@ -323,6 +323,10 @@ button:disabled {
     font-style: italic;
 }
 
+.file-list-container.empty .placeholder {
+    padding: 20px;
+}
+
 /* Claude Interface */
 .claude-input-container {
     margin-bottom: 20px;
@@ -643,6 +647,12 @@ rectory Selection Screen */
 .file-list-container {
     flex: 1;
     overflow-y: auto;
+}
+
+.file-list-container.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .file-list-compact {

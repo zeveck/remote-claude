@@ -22,6 +22,14 @@
 - **Browser Integration**: Native browser back/forward buttons work as expected
 - **Clean Sessions**: Each directory selection starts with a fresh conversation history
 
+### 🎨 File Browser Polish
+- **Centered Empty State**: "Directory is empty" message now properly centers both horizontally and vertically
+- **Dynamic CSS Classes**: Added "empty" class to file-list-container when directory has no contents
+- **Smart Layout**: Container takes full height only when empty, with message perfectly centered
+- **JavaScript Integration**: renderFileList() function dynamically adds/removes empty class as needed
+- **Visual Balance**: Empty directories show centered message without excessive white space
+- **Consistent Styling**: Empty state styling matches the overall interface design
+
 ## [0.1.2] - 2025-08-16 - Security Enhancements and Interface Refinements
 
 ### 🔒 Security Improvements

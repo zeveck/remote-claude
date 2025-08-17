@@ -452,6 +452,12 @@ class RemoteClaudeApp {
         const fileBrowser = document.getElementById('file-browser');
         fileBrowser.classList.remove('hidden');
         
+        // Ensure the file list container doesn't have empty class when showing files
+        const fileListContainer = document.querySelector('.file-list-container');
+        if (fileListContainer) {
+            fileListContainer.classList.remove('empty');
+        }
+        
         this.renderBreadcrumbs(breadcrumbs);
         this.renderFileList(directory);
     }
@@ -489,12 +495,17 @@ class RemoteClaudeApp {
     
     renderFileList(directory) {
         const fileList = document.getElementById('file-list');
+        const fileListContainer = document.getElementById('file-list').parentElement;
         fileList.innerHTML = '';
         
         if (directory.contents.length === 0) {
             fileList.innerHTML = '<div class="placeholder">Directory is empty</div>';
+            fileListContainer.classList.add('empty');
             return;
         }
+        
+        // Remove empty class when there are files
+        fileListContainer.classList.remove('empty');
         
         directory.contents.forEach(item => {
             const fileItem = document.createElement('div');
