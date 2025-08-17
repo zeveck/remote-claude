@@ -94,6 +94,32 @@ input[type="password"] {
     transition: border-color 0.3s;
 }
 
+/* Spinner styles */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid #404040;
+    border-radius: 50%;
+    border-top-color: #00d4aa;
+    animation: spin 1s ease-in-out infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-message {
+    color: #00d4aa;
+    font-style: italic;
+}
+
+.loading-message .spinner {
+    margin-right: 8px;
+}
+
 /* Android GBoard password echo mitigation */
 .form-group input[type="password"] {
     -webkit-text-security: disc !important;

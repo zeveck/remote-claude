@@ -877,6 +877,10 @@ class RemoteClaudeApp {
             entry.innerHTML = `<span class="prompt-symbol">$</span> ${content}`;
             entry.style.color = '#00d4aa';
             entry.style.marginBottom = '10px';
+        } else if (type === 'loading') {
+            entry.innerHTML = content;
+            entry.className += ' loading-message';
+            entry.style.marginBottom = '15px';
         } else {
             // Parse **text** and convert to bold formatting
             const formattedContent = this.formatClaudeResponse(content);
@@ -886,6 +890,9 @@ class RemoteClaudeApp {
         
         output.appendChild(entry);
         output.scrollTop = output.scrollHeight;
+        
+        // Return the element so it can be modified later
+        return entry;
     }
     
     formatClaudeResponse(content) {
@@ -936,10 +943,14 @@ class RemoteClaudeApp {
         input.value = '';
         input.style.height = 'auto';
         
-        // Show loading
-        const loadingMessage = 'Executing Claude Code command...';
-        this.addToTerminal(loadingMessage);
-        this.addToConversationHistory('system', loadingMessage);
+        // Disable send button and show loading with spinner
+        const sendBtn = document.getElementById('send-claude-btn');
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Executing...';
+        
+        const loadingMessage = '<span class="spinner"></span>Executing Claude Code command...';
+        const loadingElement = this.addToTerminal(loadingMessage, 'loading');
+        this.addToConversationHistory('system', 'Executing Claude Code command...');
         
         try {
             const response = await fetch('/api/command', {
@@ -955,6 +966,13 @@ class RemoteClaudeApp {
             });
             
             const data = await response.json();
+            
+            // Remove loading spinner and re-enable send button
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
             
             if (data.success) {
                 const successMessage = '✅ Command completed successfully';
@@ -999,6 +1017,13 @@ class RemoteClaudeApp {
             }
             
         } catch (error) {
+            // Remove loading spinner and re-enable send button
+            if (loadingElement) {
+                loadingElement.remove();
+            }
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+            
             console.error('Claude Code execution error:', error);
             const errorMessage = `❌ Connection error: ${error.message}`;
             this.addToTerminal(errorMessage);
