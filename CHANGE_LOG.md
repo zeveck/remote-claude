@@ -38,6 +38,14 @@
 - **Space Efficiency**: Changes allow 1-2 additional files to be visible without increasing overall height
 - **Streamlined UX**: Simple back button navigation replaces complex breadcrumb system
 
+### 💾 Conversation Persistence
+- **localStorage Integration**: Conversations automatically save to browser localStorage per directory
+- **Cross-Session Persistence**: Work survives browser closes and reopens
+- **Automatic Restoration**: Terminal display and conversation history restore when returning to directories
+- **Per-Directory Storage**: Each directory maintains its own conversation history
+- **Manual Clearing**: Ctrl+Shift+C keyboard shortcut to clear current conversation
+- **Seamless Experience**: No user intervention required - conversations just persist automatically
+
 ## [0.1.2] - 2025-08-16 - Security Enhancements and Interface Refinements
 
 ### 🔒 Security Improvements

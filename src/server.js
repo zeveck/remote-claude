@@ -43,8 +43,8 @@ const claudeCodeIntegration = new ClaudeCodeIntegration();
 
 // Protected routes (require authentication)
 app.get('/api/status', authMiddleware.requireAuth(), (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     message: 'Remote Claude Web Interface is running',
     ssl: true,
     authenticated: true,
@@ -71,14 +71,14 @@ app.get('/api/directories', authMiddleware.requireAuth(), (req, res) => {
 app.post('/api/select-directory', authMiddleware.requireAuth(), (req, res) => {
   try {
     const { directoryPath } = req.body;
-    
+
     if (!directoryPath) {
       return res.status(400).json({
         success: false,
         error: 'Directory path is required'
       });
     }
-    
+
     // Validate directory is allowed
     if (!fileSystemManager.isDirectoryAllowed(directoryPath)) {
       return res.status(403).json({
@@ -86,21 +86,21 @@ app.post('/api/select-directory', authMiddleware.requireAuth(), (req, res) => {
         error: 'Directory access denied'
       });
     }
-    
+
     // Store selected directory in session
     req.session.currentDirectory = directoryPath;
-    
+
     // Get directory contents
     const contents = fileSystemManager.getDirectoryContents(directoryPath);
     const breadcrumbs = fileSystemManager.getBreadcrumbs(directoryPath);
-    
+
     res.json({
       success: true,
       directory: contents,
       breadcrumbs: breadcrumbs,
       message: `Selected directory: ${path.basename(directoryPath)}`
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -112,7 +112,7 @@ app.post('/api/select-directory', authMiddleware.requireAuth(), (req, res) => {
 app.get('/api/files', authMiddleware.requireAuth(), (req, res) => {
   try {
     const currentDirectory = req.session.currentDirectory;
-    
+
     if (!currentDirectory) {
       return res.status(400).json({
         success: false,
@@ -120,16 +120,16 @@ app.get('/api/files', authMiddleware.requireAuth(), (req, res) => {
         needsDirectorySelection: true
       });
     }
-    
+
     const contents = fileSystemManager.getDirectoryContents(currentDirectory);
     const breadcrumbs = fileSystemManager.getBreadcrumbs(currentDirectory);
-    
+
     res.json({
       success: true,
       directory: contents,
       breadcrumbs: breadcrumbs
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -141,21 +141,21 @@ app.get('/api/files', authMiddleware.requireAuth(), (req, res) => {
 app.get('/api/file-content', authMiddleware.requireAuth(), (req, res) => {
   try {
     const { filePath } = req.query;
-    
+
     if (!filePath) {
       return res.status(400).json({
         success: false,
         error: 'File path is required'
       });
     }
-    
+
     const fileContent = fileSystemManager.readFileContents(filePath);
-    
+
     res.json({
       success: true,
       file: fileContent
     });
-    
+
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -169,7 +169,7 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
   try {
     const { action, prompt, options = {} } = req.body;
     const currentDirectory = req.session.currentDirectory;
-    
+
     // Validate required fields
     if (!action || !prompt) {
       return res.status(400).json({
@@ -177,7 +177,7 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
         error: 'Action and prompt are required'
       });
     }
-    
+
     if (!currentDirectory) {
       return res.status(400).json({
         success: false,
@@ -185,7 +185,7 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
         needsDirectorySelection: true
       });
     }
-    
+
     // Create request object
     const request = {
       userId: req.session.id || 'anonymous',
@@ -194,13 +194,13 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
       prompt,
       options
     };
-    
+
     // Execute Claude Code command
     const result = await claudeCodeIntegration.execute(request);
-    
+
     // Parse response
     const parsedResponse = claudeCodeIntegration.parseResponse(result.output);
-    
+
     res.json({
       success: true,
       result: {
@@ -209,10 +209,10 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
       },
       message: `Claude Code ${action} completed successfully`
     });
-    
+
   } catch (error) {
     console.error('Claude Code execution error:', error);
-    
+
     // Handle specific error types
     if (error.message.includes('Rate limit exceeded')) {
       return res.status(429).json({
@@ -221,21 +221,21 @@ app.post('/api/command', authMiddleware.requireAuth(), async (req, res) => {
         retryAfter: 3600 // 1 hour in seconds
       });
     }
-    
+
     if (error.message.includes('timeout')) {
       return res.status(408).json({
         success: false,
         error: 'Command execution timed out. Please try a simpler request.'
       });
     }
-    
+
     if (error.message.includes('blocked commands')) {
       return res.status(400).json({
         success: false,
         error: 'Command contains blocked patterns for security reasons'
       });
     }
-    
+
     res.status(500).json({
       success: false,
       error: error.message || 'Claude Code execution failed'
@@ -259,18 +259,18 @@ function startServer() {
 
     // Load SSL certificates
     const sslOptions = sslManager.loadCertificates();
-    
+
     // Create HTTPS server
     const server = https.createServer(sslOptions, app);
-    
+
     server.listen(PORT, HOST, () => {
       const os = require('os');
       const interfaces = os.networkInterfaces();
-      
+
       console.log(`🔒 HTTPS Server running successfully!`);
       console.log(`\n📍 Access URLs:`);
       console.log(`   Local:    https://localhost:${PORT}`);
-      
+
       // Find and display actual IP addresses
       Object.keys(interfaces).forEach(name => {
         interfaces[name].forEach(iface => {
@@ -279,7 +279,7 @@ function startServer() {
           }
         });
       });
-      
+
       console.log(`\n📱 Use the Network URL to access from your phone`);
       console.log('⚠️  You may need to accept the self-signed certificate warning');
     });
@@ -295,7 +295,7 @@ function startServer() {
     });
 
     return server;
-    
+
   } catch (error) {
     console.error('❌ Failed to start HTTPS server:', error.message);
     console.log('\n💡 Try running: npm run setup');

@@ -303,13 +303,16 @@ class RemoteClaudeApp {
         // Store the current directory path to restore selection
         const previousDirectoryPath = this.initialDirectoryPath;
         
+        // Save current conversation before leaving (it's already saved, but this ensures it's up to date)
+        this.saveConversationToStorage();
+        
         // Clear the current directory context
         this.currentDirectory = null;
         this.currentDirectoryPath = null;
         this.initialDirectoryPath = null;
         this.currentDirectoryName.textContent = 'Remote Claude';
         
-        // Clear conversation history for the new session
+        // Clear conversation history for the new session (but keep in localStorage)
         this.conversationHistory = [];
         this.sessionStartTime = new Date().toISOString();
         
@@ -545,6 +548,15 @@ class RemoteClaudeApp {
                 this.currentDirectory = data.directory.name;
                 this.currentDirectoryPath = data.directory.path;
                 this.initialDirectoryPath = data.directory.path; // Store the initial selected directory
+                
+                // Load stored conversation for this directory
+                const hasStoredConversation = this.loadConversationFromStorage();
+                if (!hasStoredConversation) {
+                    // Start fresh session if no stored conversation
+                    this.conversationHistory = [];
+                    this.sessionStartTime = new Date().toISOString();
+                }
+                
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
                 
                 // Update browser history
@@ -899,6 +911,21 @@ class RemoteClaudeApp {
             return;
         }
         
+        // Handle special commands
+        if (command === '/clear') {
+            // Add command to terminal first
+            this.addToTerminal(command, 'command');
+            
+            // Clear conversation and display
+            this.clearCurrentConversation();
+            
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+            
+            return;
+        }
+        
         // Track user command in conversation history
         this.addToConversationHistory('user', command);
         
@@ -910,7 +937,9 @@ class RemoteClaudeApp {
         input.style.height = 'auto';
         
         // Show loading
-        this.addToTerminal('Executing Claude Code command...');
+        const loadingMessage = 'Executing Claude Code command...';
+        this.addToTerminal(loadingMessage);
+        this.addToConversationHistory('system', loadingMessage);
         
         try {
             const response = await fetch('/api/command', {
@@ -928,7 +957,9 @@ class RemoteClaudeApp {
             const data = await response.json();
             
             if (data.success) {
-                this.addToTerminal('✅ Command completed successfully');
+                const successMessage = '✅ Command completed successfully';
+                this.addToTerminal(successMessage);
+                this.addToConversationHistory('system', successMessage);
                 
                 let claudeResponse = '';
                 if (data.result.parsedOutput) {
@@ -985,8 +1016,104 @@ class RemoteClaudeApp {
             directory: this.currentDirectory
         });
         
+        // Save to localStorage
+        this.saveConversationToStorage();
+        
         // Update download button visibility
         this.updateDownloadButtonVisibility();
+    }
+    
+    getStorageKey() {
+        // Create a unique key for this directory
+        return `claude-conversation-${this.initialDirectoryPath || 'unknown'}`;
+    }
+    
+    saveConversationToStorage() {
+        if (!this.initialDirectoryPath) return;
+        
+        try {
+            const conversationData = {
+                history: this.conversationHistory,
+                sessionStartTime: this.sessionStartTime,
+                lastUpdated: new Date().toISOString(),
+                directory: this.currentDirectory,
+                directoryPath: this.initialDirectoryPath
+            };
+            
+            localStorage.setItem(this.getStorageKey(), JSON.stringify(conversationData));
+        } catch (error) {
+            console.warn('Failed to save conversation to localStorage:', error);
+        }
+    }
+    
+    loadConversationFromStorage() {
+        if (!this.initialDirectoryPath) return false;
+        
+        try {
+            const stored = localStorage.getItem(this.getStorageKey());
+            if (!stored) return false;
+            
+            const conversationData = JSON.parse(stored);
+            
+            // Restore conversation history
+            this.conversationHistory = conversationData.history || [];
+            this.sessionStartTime = conversationData.sessionStartTime || new Date().toISOString();
+            
+            // Restore terminal display
+            this.restoreTerminalFromHistory();
+            
+            // Update download button visibility
+            this.updateDownloadButtonVisibility();
+            
+            return true;
+        } catch (error) {
+            console.warn('Failed to load conversation from localStorage:', error);
+            return false;
+        }
+    }
+    
+    clearConversationFromStorage() {
+        if (!this.initialDirectoryPath) return;
+        
+        try {
+            localStorage.removeItem(this.getStorageKey());
+        } catch (error) {
+            console.warn('Failed to clear conversation from localStorage:', error);
+        }
+    }
+    
+    restoreTerminalFromHistory() {
+        const output = document.getElementById('claude-output');
+        output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
+        
+        // Replay conversation history in terminal
+        this.conversationHistory.forEach(entry => {
+            if (entry.role === 'user') {
+                this.addToTerminal(entry.content, 'command');
+            } else if (entry.role === 'claude') {
+                this.addToTerminal(entry.content);
+            } else if (entry.role === 'system') {
+                this.addToTerminal(entry.content);
+            }
+        });
+    }
+    
+    clearCurrentConversation() {
+        // Clear from localStorage
+        this.clearConversationFromStorage();
+        
+        // Clear from memory
+        this.conversationHistory = [];
+        this.sessionStartTime = new Date().toISOString();
+        
+        // Clear terminal display
+        const output = document.getElementById('claude-output');
+        output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
+        
+        // Update download button visibility
+        this.updateDownloadButtonVisibility();
+        
+        this.updateStatus('Conversation cleared', 'info');
     }
     
     updateDownloadButtonVisibility() {
