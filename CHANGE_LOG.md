@@ -43,8 +43,15 @@
 - **Cross-Session Persistence**: Work survives browser closes and reopens
 - **Automatic Restoration**: Terminal display and conversation history restore when returning to directories
 - **Per-Directory Storage**: Each directory maintains its own conversation history
-- **Manual Clearing**: Ctrl+Shift+C keyboard shortcut to clear current conversation
+- **Manual Clearing**: `/clear` command to reset conversation and localStorage
 - **Seamless Experience**: No user intervention required - conversations just persist automatically
+
+### 🎛️ Interface Refinements
+- **Contextual Back Button**: Browser back button closes file viewer modal before navigating
+- **Download Button Positioning**: Moved to lower left corner, only visible when conversation exists
+- **Square Download Button**: Compact 20x20px square design with larger arrow icon
+- **Directory Selection Memory**: Dropdown remembers previously selected directory when returning
+- **File Browser Back Button**: Smart visibility - only shows when navigating into subdirectories
 
 ## [0.1.2] - 2025-08-16 - Security Enhancements and Interface Refinements
 

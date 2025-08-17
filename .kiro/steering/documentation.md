@@ -11,3 +11,5 @@ Always keep these files up to date when making changes:
 - TEST_SUMMARY.md (update when tests change)
 
 When the user mentions committing or asks to commit, automatically check and update these files first.
+
+TASKS.md should not be updated, it is now archival.
