@@ -313,6 +313,9 @@ class RemoteClaudeApp {
         this.conversationHistory = [];
         this.sessionStartTime = new Date().toISOString();
         
+        // Update download button visibility
+        this.updateDownloadButtonVisibility();
+        
         // Clear the terminal output
         const output = document.getElementById('claude-output');
         output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
@@ -330,6 +333,16 @@ class RemoteClaudeApp {
     handleBrowserNavigation(e) {
         const state = e.state;
         
+        // Check if file viewer modal is open first
+        const modal = document.getElementById('file-viewer-modal');
+        if (modal && !modal.classList.contains('hidden')) {
+            // Close the file viewer modal instead of navigating
+            this.closeFileViewer();
+            // Push current state back to prevent actual navigation
+            history.pushState({ section: 'app', directory: this.currentDirectory }, '', '#app');
+            return;
+        }
+        
         if (state && state.section === 'directory') {
             // User pressed back button while in Claude interface
             if (!this.appSection.classList.contains('hidden')) {
@@ -340,6 +353,11 @@ class RemoteClaudeApp {
             if (!this.directorySection.classList.contains('hidden')) {
                 // This would require re-selecting the directory, so we'll just stay on directory selection
                 return;
+            }
+        } else {
+            // Handle back button when no specific state (e.g., first navigation)
+            if (!this.appSection.classList.contains('hidden')) {
+                this.handleBackToDirectory();
             }
         }
     }
@@ -966,6 +984,17 @@ class RemoteClaudeApp {
             timestamp: new Date().toISOString(),
             directory: this.currentDirectory
         });
+        
+        // Update download button visibility
+        this.updateDownloadButtonVisibility();
+    }
+    
+    updateDownloadButtonVisibility() {
+        const downloadBtn = document.getElementById('download-conversation-btn');
+        if (!downloadBtn) return;
+        
+        // Show button only if there's conversation history
+        downloadBtn.style.display = this.conversationHistory.length > 0 ? 'block' : 'none';
     }
     
     downloadConversation() {
