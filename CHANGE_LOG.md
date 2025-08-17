@@ -1,5 +1,27 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.3] - 2025-08-17 - Navigation Improvements
+
+### 🧭 Navigation Enhancements
+- **Back Button**: Added back button (⬅️) to Claude interface header for easy return to directory selection
+- **Browser History Management**: Implemented proper browser back/forward button handling with popstate events
+- **Session Clearing**: Back button clears conversation history and terminal output for fresh sessions
+- **History States**: Added proper history state management for login, directory, and app sections
+- **Improved UX**: Users can now easily switch between directories without logging out completely
+
+### 🔧 Technical Implementation
+- **handleBackToDirectory()**: New method to clear session context and return to directory selection
+- **handleBrowserNavigation()**: Browser history event handler for back/forward button support
+- **History API**: Proper use of `history.pushState()` and `history.replaceState()` for navigation states
+- **Session Management**: Automatic clearing of conversation history and terminal output on navigation
+- **URL Fragments**: Added URL fragments (#login, #directory, #app) for better navigation tracking
+
+### 🎯 User Experience Improvements
+- **Intuitive Navigation**: Clear visual back button in terminal header
+- **No More Logout Required**: Users can switch directories without full logout/login cycle
+- **Browser Integration**: Native browser back/forward buttons work as expected
+- **Clean Sessions**: Each directory selection starts with a fresh conversation history
+
 ## [0.1.2] - 2025-08-16 - Security Enhancements and Interface Refinements
 
 ### 🔒 Security Improvements

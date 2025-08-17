@@ -78,6 +78,11 @@ class RemoteClaudeApp {
             this.handleLogout();
         });
         
+        // Back to directory selection button
+        document.getElementById('back-to-directory-btn').addEventListener('click', () => {
+            this.handleBackToDirectory();
+        });
+        
         // Enter key on password field
         document.getElementById('password').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
@@ -169,6 +174,11 @@ class RemoteClaudeApp {
                 this.closeFileViewer();
             }
         });
+        
+        // Handle browser back button
+        window.addEventListener('popstate', (e) => {
+            this.handleBrowserNavigation(e);
+        });
     }
     
     async checkAuthStatus() {
@@ -252,6 +262,9 @@ class RemoteClaudeApp {
         this.directorySection.classList.add('hidden');
         this.appSection.classList.add('hidden');
         document.getElementById('password').focus();
+        
+        // Update browser history
+        history.replaceState({ section: 'login' }, '', '#login');
     }
     
     showDirectorySelection() {
@@ -263,6 +276,9 @@ class RemoteClaudeApp {
         setTimeout(() => {
             document.getElementById('directory-select').focus();
         }, 100);
+        
+        // Update browser history
+        history.replaceState({ section: 'directory' }, '', '#directory');
     }
     
     showAppSection() {
@@ -273,6 +289,46 @@ class RemoteClaudeApp {
         // Only auto-focus on desktop to prevent mobile keyboard popup
         if (!this.isMobileDevice()) {
             document.getElementById('claude-input').focus();
+        }
+    }
+    
+    handleBackToDirectory() {
+        // Clear the current directory context
+        this.currentDirectory = null;
+        this.currentDirectoryName.textContent = 'Remote Claude';
+        
+        // Clear conversation history for the new session
+        this.conversationHistory = [];
+        this.sessionStartTime = new Date().toISOString();
+        
+        // Clear the terminal output
+        const output = document.getElementById('claude-output');
+        output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
+        
+        // Show directory selection screen
+        this.showDirectorySelection();
+        
+        // Reload directories to ensure fresh list
+        this.loadDirectories();
+        
+        // Update browser history
+        history.pushState({ section: 'directory' }, '', '#directory');
+    }
+    
+    handleBrowserNavigation(e) {
+        const state = e.state;
+        
+        if (state && state.section === 'directory') {
+            // User pressed back button while in Claude interface
+            if (!this.appSection.classList.contains('hidden')) {
+                this.handleBackToDirectory();
+            }
+        } else if (state && state.section === 'app') {
+            // User pressed forward button to return to app
+            if (!this.directorySection.classList.contains('hidden')) {
+                // This would require re-selecting the directory, so we'll just stay on directory selection
+                return;
+            }
         }
     }
     
@@ -380,6 +436,9 @@ class RemoteClaudeApp {
                 this.currentDirectoryName.textContent = data.directory.name;
                 this.currentDirectory = data.directory.name;
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
+                
+                // Update browser history
+                history.pushState({ section: 'app', directory: data.directory.name }, '', '#app');
             } else {
                 this.updateStatus(`Failed to select directory: ${data.error}`, 'error');
             }
