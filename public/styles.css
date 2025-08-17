@@ -426,6 +426,35 @@ button:disabled {
     font-size: 14px;
 }
 
+/* Virtual Keyboard Handling */
+body.keyboard-open .terminal-layout,
+body.keyboard-detected .terminal-layout {
+    height: calc(var(--vh, 1vh) * 100 - var(--keyboard-height, 0px));
+    max-height: calc(var(--vh, 1vh) * 100 - var(--keyboard-height, 0px));
+}
+
+body.keyboard-open .terminal-output,
+body.keyboard-detected .terminal-output {
+    max-height: calc(var(--vh, 1vh) * 50 - var(--keyboard-height, 0px));
+}
+
+body.keyboard-open .terminal-input-container,
+body.keyboard-detected .terminal-input-container {
+    position: sticky;
+    bottom: 0;
+    z-index: 1000;
+    background-color: #161b22;
+    border-top: 2px solid #00d4aa;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Ensure input stays visible when keyboard is open */
+body.keyboard-open #claude-input,
+body.keyboard-detected #claude-input {
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
     .container {
@@ -864,6 +893,38 @@ rectory Selection Screen */
     #claude-input {
         min-height: 40px;
         max-height: 120px;
+        /* Prevent zoom on iOS */
+        font-size: 16px;
+        /* Improve keyboard handling */
+        -webkit-user-select: text;
+        user-select: text;
+    }
+    
+    /* Enhanced keyboard handling for mobile */
+    body.keyboard-open .terminal-layout,
+    body.keyboard-detected .terminal-layout {
+        padding-bottom: env(keyboard-inset-height, 0px);
+    }
+    
+    /* Ensure input container stays at bottom */
+    body.keyboard-open .terminal-input-container,
+    body.keyboard-detected .terminal-input-container {
+        position: fixed;
+        bottom: env(keyboard-inset-height, 0px);
+        left: 0;
+        right: 0;
+        z-index: 1001;
+        background-color: #161b22;
+        border-top: 2px solid #00d4aa;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+        padding: 12px;
+    }
+    
+    /* Adjust terminal output when keyboard is open */
+    body.keyboard-open .terminal-output,
+    body.keyboard-detected .terminal-output {
+        padding-bottom: 80px; /* Space for fixed input */
+        margin-bottom: env(keyboard-inset-height, 0px);
     }
 
     .directory-selection-screen {

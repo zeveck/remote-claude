@@ -56,6 +56,91 @@ class RemoteClaudeApp {
 
         // Also fix on window focus (helps with mobile browser address bar changes)
         window.addEventListener('focus', setViewportHeight);
+
+        // Handle virtual keyboard on mobile
+        this.setupVirtualKeyboardHandling();
+    }
+
+    setupVirtualKeyboardHandling() {
+        if (!this.isMobileDevice()) return;
+
+        // Track original viewport height
+        let originalViewportHeight = window.innerHeight;
+
+        // Setup keyboard handling after DOM is ready
+        setTimeout(() => {
+            const claudeInput = document.getElementById('claude-input');
+            if (!claudeInput) return;
+
+            // Handle focus - keyboard opening
+            claudeInput.addEventListener('focus', () => {
+                // Small delay to let keyboard animation start
+                setTimeout(() => {
+                    // Scroll input into view
+                    claudeInput.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+
+                    // Add class to adjust layout
+                    document.body.classList.add('keyboard-open');
+                }, 300);
+            });
+
+            // Handle blur - keyboard closing
+            claudeInput.addEventListener('blur', () => {
+                document.body.classList.remove('keyboard-open');
+            });
+        }, 1000);
+
+        // Handle viewport changes (keyboard open/close detection)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const currentHeight = window.innerHeight;
+                const heightDifference = originalViewportHeight - currentHeight;
+
+                // If height decreased significantly, keyboard is likely open
+                if (heightDifference > 150) {
+                    document.body.classList.add('keyboard-detected');
+                    // Ensure input is visible
+                    const claudeInput = document.getElementById('claude-input');
+                    if (claudeInput && document.activeElement === claudeInput) {
+                        setTimeout(() => {
+                            claudeInput.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                        }, 100);
+                    }
+                } else {
+                    document.body.classList.remove('keyboard-detected');
+                }
+
+                // Update viewport height
+                const vh = currentHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+            }, 150);
+        });
+
+        // Visual Viewport API support (modern browsers)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                const viewport = window.visualViewport;
+                const heightDifference = window.innerHeight - viewport.height;
+
+                if (heightDifference > 150) {
+                    document.body.classList.add('keyboard-detected');
+                    // Adjust for keyboard
+                    document.documentElement.style.setProperty('--keyboard-height', `${heightDifference}px`);
+                } else {
+                    document.body.classList.remove('keyboard-detected');
+                    document.documentElement.style.setProperty('--keyboard-height', '0px');
+                }
+            });
+        }
     }
 
     async initializeApp() {
@@ -156,6 +241,10 @@ class RemoteClaudeApp {
 
         document.getElementById('claude-input').addEventListener('input', (e) => {
             this.autoResizeTextarea(e.target);
+            // Ensure input stays visible on mobile
+            if (this.isMobileDevice()) {
+                this.ensureInputVisible(e.target);
+            }
         });
 
         // Download conversation button
@@ -430,6 +519,30 @@ class RemoteClaudeApp {
     isMobileDevice() {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
             (window.innerWidth <= 768 && 'ontouchstart' in window);
+    }
+
+    ensureInputVisible(inputElement) {
+        // Debounce to avoid excessive scrolling
+        if (this.scrollTimeout) {
+            clearTimeout(this.scrollTimeout);
+        }
+
+        this.scrollTimeout = setTimeout(() => {
+            if (document.activeElement === inputElement) {
+                // Get the input's position
+                const rect = inputElement.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+
+                // If input is not fully visible, scroll it into view
+                if (rect.bottom > viewportHeight * 0.7) {
+                    inputElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                }
+            }
+        }, 100);
     }
 
     showLoginError(message) {
