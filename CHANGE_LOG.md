@@ -1,5 +1,31 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.6] - 2025-08-20 - Mobile Keyboard Detection Fix
+
+### 📱 Mobile Keyboard Handling
+- **Fixed Swipe-to-Dismiss**: Keyboard dismissal via swipe gesture now properly restores layout
+- **Comprehensive Detection**: Multi-layer detection strategy handles all keyboard dismissal methods
+- **Visual Viewport API**: Primary detection method using most reliable browser API
+- **State Management**: Centralized keyboard state tracking prevents redundant operations
+
+### 🔧 Technical Implementation
+- **Multiple Detection Layers**: Visual Viewport API, scroll events, smart blur handling, click detection, and periodic polling
+- **iOS Support**: Added Visual Viewport scroll event listener for iOS-specific swipe behavior
+- **Fallback Mechanisms**: Periodic polling ensures layout restoration even in edge cases
+- **Code Cleanup**: Removed unused variables and consolidated adjustment functions
+
+### 🎯 Why This Was Hard
+- **Mobile Browser Quirk**: Input can remain focused even when keyboard is hidden
+- **No Reliable Event**: No single event consistently fires when keyboard dismisses
+- **Platform Differences**: iOS and Android handle keyboard dismissal differently
+- **Swipe Gesture**: Swiping keyboard away doesn't trigger traditional blur events
+
+### ✨ User Experience Improvements
+- **Reliable Restoration**: Screen layout always returns to normal regardless of dismissal method
+- **All Methods Supported**: Works with swipe, tap outside, done button, and send button
+- **No Visual Glitches**: Smooth transitions without layout jumps or mangled screens
+- **Consistent Behavior**: Same result across different mobile browsers and platforms
+
 ## [0.1.5] - 2025-08-20 - Enhanced Claude Response Formatting
 
 ### 🎨 Rich Markdown Formatting

@@ -867,3 +867,45 @@ ion 6: Auto-Scroll Conversation Enhancement
 - **Seamless Continuation**: Users see the most recent messages immediately when returning to conversations
 - **Consistent Behavior**: Conversation pane always shows latest content when loaded
 - **Better Flow**: No manual scrolling needed to see where conversation left off
+
+### Session 7: Mobile Keyboard Detection Fix (v0.1.6)
+**Date**: 2025-08-20  
+**Focus**: Fixing mobile keyboard detection issues, especially swipe-to-dismiss behavior
+
+#### Major Accomplishments
+1. **Comprehensive Keyboard Detection System**
+   - Implemented multi-layer detection strategy to handle all dismissal methods
+   - Added Visual Viewport API as primary detection method (most reliable)
+   - Created centralized keyboard state management with open/close functions
+   - Added periodic polling as fallback for edge cases
+
+2. **Fixed Swipe-to-Dismiss Bug**
+   - Addressed issue where input remains focused when keyboard is swiped away
+   - Visual Viewport resize and scroll events now properly detect keyboard dismissal
+   - Smart blur handling verifies keyboard is actually gone before cleanup
+   - Click outside detection catches tap-to-dismiss cases
+
+3. **Technical Implementation**
+   - Centralized `closeKeyboardAdjustments()` and `openKeyboardAdjustments()` functions
+   - State tracking with `keyboardIsOpen` flag prevents redundant operations
+   - Multiple detection methods work in concert for reliability
+   - Removed unused variables and cleaned up code
+
+#### Why This Was Challenging
+- **Mobile Browser Behavior**: Input can stay focused even when keyboard is hidden
+- **No Reliable Event**: No single event fires consistently when keyboard dismisses
+- **Platform Differences**: iOS and Android handle keyboard differently
+- **Swipe Gesture**: Swiping keyboard away doesn't trigger blur events
+
+#### Solution Architecture
+1. **Visual Viewport API** (Primary): Most reliable, detects actual viewport changes
+2. **Visual Viewport Scroll** (iOS): Catches iOS-specific swipe behavior
+3. **Smart Blur Handler**: Verifies keyboard closure with height check
+4. **Click Outside Detection**: Handles tap-to-dismiss scenarios
+5. **Periodic Polling** (Fallback): Self-corrects any missed dismissals
+
+#### User Experience Improvements
+- **Reliable Restoration**: Screen layout always returns to normal after keyboard dismissal
+- **All Dismissal Methods**: Works with swipe, tap outside, done button, and send button
+- **Consistent Behavior**: Same result regardless of how keyboard is closed
+- **No Visual Glitches**: Smooth transitions without layout jumps

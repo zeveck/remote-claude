@@ -210,6 +210,8 @@ remote_term_llm/
 
 ## Version History
 
+- **v0.1.6** - Fixed mobile keyboard detection issues (especially swipe-to-dismiss)
+- **v0.1.5** - Improved Claude response formatting
 - **v0.1.4** - Auto-scroll enhancement, conversation UX improvements
 - **v0.1.3** - Navigation improvements, conversation persistence, UI polish
 - **v0.1.2** - Security enhancements, file viewer, mobile viewport fixes

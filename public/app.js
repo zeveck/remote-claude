@@ -64,8 +64,28 @@ class RemoteClaudeApp {
     setupVirtualKeyboardHandling() {
         if (!this.isMobileDevice()) return;
 
-        // Track original viewport height
+        // Track keyboard state and viewport heights
+        let keyboardIsOpen = false;
         let originalViewportHeight = window.innerHeight;
+
+        // Centralized function to clean up keyboard adjustments
+        const closeKeyboardAdjustments = () => {
+            keyboardIsOpen = false;
+            document.body.classList.remove('keyboard-open');
+            document.body.classList.remove('keyboard-detected');
+            document.documentElement.style.setProperty('--keyboard-height', '0px');
+            
+            // Reset viewport height
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        };
+
+        // Centralized function to apply keyboard adjustments
+        const openKeyboardAdjustments = () => {
+            keyboardIsOpen = true;
+            document.body.classList.add('keyboard-open');
+            document.body.classList.add('keyboard-detected');
+        };
 
         // Setup keyboard handling after DOM is ready
         setTimeout(() => {
@@ -83,18 +103,84 @@ class RemoteClaudeApp {
                         inline: 'nearest'
                     });
 
-                    // Add class to adjust layout
-                    document.body.classList.add('keyboard-open');
+                    openKeyboardAdjustments();
                 }, 300);
             });
 
-            // Handle blur - keyboard closing
+            // Handle blur - keyboard closing (might not always fire on mobile)
             claudeInput.addEventListener('blur', () => {
-                document.body.classList.remove('keyboard-open');
+                // On mobile, blur might fire even if keyboard stays open
+                // So we'll check viewport height after a delay
+                setTimeout(() => {
+                    const currentHeight = window.visualViewport ? 
+                        window.visualViewport.height : window.innerHeight;
+                    const heightDifference = originalViewportHeight - currentHeight;
+                    
+                    // Only close if keyboard is actually gone (height restored)
+                    if (heightDifference < 100) {
+                        closeKeyboardAdjustments();
+                    }
+                }, 100);
+            });
+
+            // Additional check: clicking outside the input
+            document.addEventListener('click', (e) => {
+                if (e.target !== claudeInput && keyboardIsOpen) {
+                    // Check if keyboard actually closed after a delay
+                    setTimeout(() => {
+                        const currentHeight = window.visualViewport ? 
+                            window.visualViewport.height : window.innerHeight;
+                        const heightDifference = originalViewportHeight - currentHeight;
+                        
+                        if (heightDifference < 100) {
+                            closeKeyboardAdjustments();
+                        }
+                    }, 300);
+                }
             });
         }, 1000);
 
-        // Handle viewport changes (keyboard open/close detection)
+        // Visual Viewport API - most reliable for modern mobile browsers
+        if (window.visualViewport) {
+            let visualViewportTimer;
+            
+            window.visualViewport.addEventListener('resize', () => {
+                clearTimeout(visualViewportTimer);
+                visualViewportTimer = setTimeout(() => {
+                    const viewport = window.visualViewport;
+                    const currentHeight = viewport.height;
+                    const heightDifference = window.innerHeight - currentHeight;
+
+                    // Keyboard is open if viewport is significantly smaller
+                    if (heightDifference > 100) {
+                        if (!keyboardIsOpen) {
+                            openKeyboardAdjustments();
+                        }
+                        document.documentElement.style.setProperty('--keyboard-height', `${heightDifference}px`);
+                    } else {
+                        // Keyboard has closed - viewport restored
+                        if (keyboardIsOpen) {
+                            closeKeyboardAdjustments();
+                        }
+                    }
+                }, 50); // Shorter delay for visual viewport
+            });
+
+            // Also listen for scroll events on visual viewport (iOS specific behavior)
+            window.visualViewport.addEventListener('scroll', () => {
+                // On iOS, scrolling can indicate keyboard dismissal
+                if (keyboardIsOpen) {
+                    const currentHeight = window.visualViewport.height;
+                    const heightDifference = window.innerHeight - currentHeight;
+                    
+                    if (heightDifference < 100) {
+                        closeKeyboardAdjustments();
+                    }
+                }
+            });
+        }
+
+        // Fallback: Window resize event
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -102,44 +188,39 @@ class RemoteClaudeApp {
                 const currentHeight = window.innerHeight;
                 const heightDifference = originalViewportHeight - currentHeight;
 
-                // If height decreased significantly, keyboard is likely open
-                if (heightDifference > 150) {
-                    document.body.classList.add('keyboard-detected');
-                    // Ensure input is visible
-                    const claudeInput = document.getElementById('claude-input');
-                    if (claudeInput && document.activeElement === claudeInput) {
-                        setTimeout(() => {
-                            claudeInput.scrollIntoView({
-                                behavior: 'smooth',
-                                block: 'center'
-                            });
-                        }, 100);
-                    }
-                } else {
-                    document.body.classList.remove('keyboard-detected');
-                }
-
-                // Update viewport height
+                // Update viewport height CSS variable
                 const vh = currentHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+                // Only use this as fallback if visualViewport isn't available
+                if (!window.visualViewport) {
+                    if (heightDifference > 150) {
+                        if (!keyboardIsOpen) {
+                            openKeyboardAdjustments();
+                        }
+                    } else {
+                        if (keyboardIsOpen) {
+                            closeKeyboardAdjustments();
+                        }
+                    }
+                }
             }, 150);
         });
 
-        // Visual Viewport API support (modern browsers)
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                const viewport = window.visualViewport;
-                const heightDifference = window.innerHeight - viewport.height;
-
-                if (heightDifference > 150) {
-                    document.body.classList.add('keyboard-detected');
-                    // Adjust for keyboard
-                    document.documentElement.style.setProperty('--keyboard-height', `${heightDifference}px`);
-                } else {
-                    document.body.classList.remove('keyboard-detected');
-                    document.documentElement.style.setProperty('--keyboard-height', '0px');
+        // Periodic check as last resort (for edge cases)
+        if (this.isMobileDevice()) {
+            setInterval(() => {
+                if (keyboardIsOpen) {
+                    const currentHeight = window.visualViewport ? 
+                        window.visualViewport.height : window.innerHeight;
+                    const heightDifference = originalViewportHeight - currentHeight;
+                    
+                    // If height is restored but we still think keyboard is open, fix it
+                    if (heightDifference < 100) {
+                        closeKeyboardAdjustments();
+                    }
                 }
-            });
+            }, 1000); // Check every second
         }
     }
 
@@ -1300,7 +1381,7 @@ class RemoteClaudeApp {
                 exportTime: new Date().toISOString(),
                 directory: this.currentDirectory || 'unknown',
                 totalMessages: this.conversationHistory.length,
-                version: 'v0.1.2'
+                version: 'v0.1.6'
             },
             conversation: this.conversationHistory
         };
