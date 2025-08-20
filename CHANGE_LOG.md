@@ -1,5 +1,19 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.4] - 2025-08-19 - Auto-Scroll Enhancement
+
+### 💬 Conversation UX Improvements
+- **Auto-Scroll to Bottom**: Conversation pane automatically scrolls to show most recent messages when loading existing conversations
+- **Seamless Continuation**: Users immediately see where their conversation left off without manual scrolling
+- **Smart Timing**: Uses `requestAnimationFrame` to ensure DOM updates complete before scrolling
+- **Consistent Behavior**: Auto-scroll works both when loading conversations and when switching back to app section
+
+### 🔧 Technical Implementation
+- **scrollConversationToBottom()**: New utility method for consistent scroll behavior
+- **Enhanced restoreTerminalFromHistory()**: Now includes auto-scroll after conversation restoration
+- **Improved showAppSection()**: Added scroll functionality when app section is displayed
+- **Proper DOM Timing**: Uses appropriate delays and `requestAnimationFrame` for reliable scrolling
+
 ## [0.1.3] - 2025-08-17 - Navigation Improvements
 
 ### 🧭 Navigation Enhancements

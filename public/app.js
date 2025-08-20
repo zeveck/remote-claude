@@ -386,6 +386,11 @@ class RemoteClaudeApp {
         if (!this.isMobileDevice()) {
             document.getElementById('claude-input').focus();
         }
+
+        // Ensure conversation pane scrolls to bottom when app section is shown
+        setTimeout(() => {
+            this.scrollConversationToBottom();
+        }, 100);
     }
 
     handleBackToDirectory() {
@@ -543,6 +548,17 @@ class RemoteClaudeApp {
                 }
             }
         }, 100);
+    }
+
+    scrollConversationToBottom() {
+        // Scroll the conversation pane to the bottom to show the most recent messages
+        const output = document.getElementById('claude-output');
+        if (output) {
+            // Use requestAnimationFrame to ensure DOM updates are complete
+            requestAnimationFrame(() => {
+                output.scrollTop = output.scrollHeight;
+            });
+        }
     }
 
     showLoginError(message) {
@@ -1233,6 +1249,9 @@ class RemoteClaudeApp {
                 this.addToTerminal(entry.content);
             }
         });
+
+        // Ensure conversation pane scrolls to bottom after loading
+        this.scrollConversationToBottom();
     }
 
     clearCurrentConversation() {

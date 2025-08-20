@@ -173,6 +173,7 @@ remote_term_llm/
 
 ### Conversation Management
 - **Persistent Conversations**: Work automatically saves and restores per directory
+- **Auto-Scroll**: Conversation pane automatically scrolls to show latest messages when loaded
 - **Export Functionality**: Download conversation history as structured JSON
 - **Clear Command**: Type `/clear` to reset conversation and start fresh
 - **Loading Indicators**: Professional spinner during Claude command execution
@@ -209,7 +210,7 @@ remote_term_llm/
 
 ## Version History
 
-- **v0.1.4** - Security hardening, code quality improvements, loading spinners
+- **v0.1.4** - Auto-scroll enhancement, conversation UX improvements
 - **v0.1.3** - Navigation improvements, conversation persistence, UI polish
 - **v0.1.2** - Security enhancements, file viewer, mobile viewport fixes
 - **v0.1.1** - UI polish, bold text formatting, version display
