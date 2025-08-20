@@ -980,18 +980,39 @@ class RemoteClaudeApp {
     }
 
     formatClaudeResponse(content) {
-        // Escape HTML to prevent XSS attacks
-        const escapeHtml = (text) => {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        };
+        // Escape HTML first to prevent XSS
+        const escaped = content
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
 
-        // Escape the content first
-        let formatted = escapeHtml(content);
+        let formatted = escaped;
+
+        // Handle code blocks first, including surrounding newlines
+        formatted = formatted.replace(/\n?```(\w+)?\n([\s\S]*?)\n```\n?/g, (match, language, code) => {
+            const lang = language ? ` class="language-${language}"` : '';
+            return `<pre class="code-block"><code${lang}>${code}</code></pre>`;
+        });
+
+        // Handle inline code (`code`)
+        formatted = formatted.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
 
         // Convert **text** to <strong>text</strong>
         formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // Convert *text* to <em>text</em>
+        formatted = formatted.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+
+        // Convert URLs to clickable links
+        formatted = formatted.replace(
+            /(https?:\/\/[^\s<>"]+)/g, 
+            '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+        );
+
+        // Convert line breaks to <br> tags
+        formatted = formatted.replace(/\n/g, '<br>');
 
         return formatted;
     }
@@ -1023,20 +1044,7 @@ class RemoteClaudeApp {
         return entry;
     }
 
-    formatClaudeResponse(content) {
-        // Escape HTML first to prevent XSS
-        const escaped = content
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
 
-        // Convert **text** to <strong>text</strong>
-        const formatted = escaped.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
-        return formatted;
-    }
 
     async sendClaudeCommand() {
         const input = document.getElementById('claude-input');

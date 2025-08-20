@@ -108,7 +108,9 @@ input[type="password"] {
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .loading-message {
@@ -855,13 +857,13 @@ rectory Selection Screen */
 
     .file-sidebar {
         width: 100%;
-        height: 160px;
-        /* Further reduced */
+        height: 130px;
         margin-top: 0;
         border-left: none;
         border-top: 1px solid #404040;
         order: 2;
         flex-shrink: 0;
+        margin-bottom: 5px;
     }
 
     .terminal-container {
@@ -899,13 +901,13 @@ rectory Selection Screen */
         -webkit-user-select: text;
         user-select: text;
     }
-    
+
     /* Enhanced keyboard handling for mobile */
     body.keyboard-open .terminal-layout,
     body.keyboard-detected .terminal-layout {
         padding-bottom: env(keyboard-inset-height, 0px);
     }
-    
+
     /* Ensure input container stays at bottom */
     body.keyboard-open .terminal-input-container,
     body.keyboard-detected .terminal-input-container {
@@ -919,11 +921,12 @@ rectory Selection Screen */
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
         padding: 12px;
     }
-    
+
     /* Adjust terminal output when keyboard is open */
     body.keyboard-open .terminal-output,
     body.keyboard-detected .terminal-output {
-        padding-bottom: 80px; /* Space for fixed input */
+        padding-bottom: 80px;
+        /* Space for fixed input */
         margin-bottom: env(keyboard-inset-height, 0px);
     }
 
@@ -937,13 +940,13 @@ rectory Selection Screen */
     }
 
     .bottom-left-controls {
-        bottom: 10px;
-        left: 10px;
+        bottom: 12px !important;
+        left: 12px !important;
     }
 
     .bottom-right-controls {
-        bottom: 10px;
-        right: 10px;
+        bottom: 12px !important;
+        right: 12px !important;
     }
 
     .download-btn {
@@ -955,8 +958,8 @@ rectory Selection Screen */
 /* Bottom left controls */
 .bottom-left-controls {
     position: fixed;
-    bottom: 5px;
-    left: 5px;
+    bottom: 8px;
+    left: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -966,8 +969,8 @@ rectory Selection Screen */
 /* Bottom right controls */
 .bottom-right-controls {
     position: fixed;
-    bottom: 5px;
-    right: 5px;
+    bottom: 8px;
+    right: 8px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1183,4 +1186,89 @@ rectory Selection Screen */
         padding: 15px;
         font-size: 12px;
     }
+}
+
+/* Claud
+e Response Formatting Styles */
+.code-block {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 2px 0;
+    overflow-x: auto;
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+.code-block code {
+    background: transparent;
+    padding: 0;
+    border: none;
+    color: #e6edf3;
+    font-family: inherit;
+    font-size: inherit;
+}
+
+.inline-code {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 3px;
+    padding: 2px 6px;
+    font-family: 'Courier New', 'Monaco', monospace;
+    font-size: 12px;
+    color: #f85149;
+}
+
+/* Terminal entry formatting */
+.terminal-entry strong {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+}
+
+.terminal-entry em {
+    color: #ffa657;
+    font-style: italic;
+}
+
+.terminal-entry a {
+    color: #58a6ff;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.terminal-entry a:hover {
+    color: #79c0ff;
+}
+
+.terminal-entry a:visited {
+    color: #bc8cff;
+}
+
+/* Language-specific syntax highlighting for code blocks */
+.language-bash .code-block,
+.language-shell .code-block {
+    border-left: 4px solid #00d4aa;
+}
+
+.language-javascript .code-block,
+.language-js .code-block {
+    border-left: 4px solid #f7df1e;
+}
+
+.language-python .code-block {
+    border-left: 4px solid #3776ab;
+}
+
+.language-json .code-block {
+    border-left: 4px solid #ff6b6b;
+}
+
+.language-css .code-block {
+    border-left: 4px solid #1572b6;
+}
+
+.language-html .code-block {
+    border-left: 4px solid #e34f26;
 }

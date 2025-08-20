@@ -1,5 +1,27 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.5] - 2025-08-20 - Enhanced Claude Response Formatting
+
+### 🎨 Rich Markdown Formatting
+- **Comprehensive Markdown Support**: Extended beyond basic bold text to full Markdown rendering
+- **Code Block Enhancement**: Added support for ```language code blocks with syntax highlighting containers
+- **Language-Specific Styling**: Color-coded left borders for different programming languages (bash, python, javascript, etc.)
+- **Inline Code Formatting**: Proper styling for `inline code` with dark background and red text
+- **Italic Text Support**: Added *italic* text formatting with orange styling
+- **Automatic URL Links**: URLs automatically convert to clickable links with security attributes
+
+### 🔧 Technical Improvements
+- **Spacing Optimization**: Fixed extra line breaks around code blocks through improved regex patterns
+- **Compact Code Blocks**: Reduced margins and padding for tighter integration with text flow
+- **Regex Enhancement**: Optimized `\n?```(\w+)?\n([\s\S]*?)\n```\n?` pattern to handle surrounding whitespace
+- **Security Maintained**: HTML escaping prevents XSS while enabling rich formatting transformations
+
+### 🎯 User Experience Enhancements
+- **Professional Code Display**: Dark-themed code blocks with proper typography and spacing
+- **Visual Hierarchy**: Clear distinction between different content types (text, code, links)
+- **Interactive Elements**: Clickable links open in new tabs with proper security attributes
+- **Clean Layout**: Eliminated extra spacing issues for seamless text flow
+
 ## [0.1.4] - 2025-08-19 - Auto-Scroll Enhancement
 
 ### 💬 Conversation UX Improvements

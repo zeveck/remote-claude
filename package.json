@@ -1,6 +1,6 @@
 {
   "name": "remote-claude-web",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Secure web interface for remote Claude Code access",
   "main": "src/server.js",
   "scripts": {
@@ -29,7 +29,12 @@
     "supertest": "^6.3.3",
     "nodemon": "^3.0.2"
   },
-  "keywords": ["claude", "ai", "web-interface", "remote-access"],
+  "keywords": [
+    "claude",
+    "ai",
+    "web-interface",
+    "remote-access"
+  ],
   "author": "",
   "license": "MIT"
 }
