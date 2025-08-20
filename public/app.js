@@ -1150,6 +1150,19 @@ class RemoteClaudeApp {
             return;
         }
 
+        // Handle /trim command - removes last message without sending to Claude
+        if (command === '/trim') {
+            // Don't add the command itself to terminal
+            // Just trim the last message
+            this.trimLastMessage();
+
+            // Clear input
+            input.value = '';
+            input.style.height = 'auto';
+
+            return;
+        }
+
         // Track user command in conversation history
         this.addToConversationHistory('user', command);
 
@@ -1361,6 +1374,31 @@ class RemoteClaudeApp {
         this.updateStatus('Conversation cleared', 'info');
     }
 
+    trimLastMessage() {
+        // Check if there's anything to trim
+        if (this.conversationHistory.length === 0) {
+            this.updateStatus('No messages to trim', 'info');
+            return;
+        }
+
+        // Remove the last message from conversation history
+        const removedMessage = this.conversationHistory.pop();
+        
+        // Save the updated conversation to localStorage
+        this.saveConversationToStorage();
+
+        // Rebuild the terminal display from the updated history
+        this.restoreTerminalFromHistory();
+
+        // Update download button visibility
+        this.updateDownloadButtonVisibility();
+
+        // Show status message about what was removed
+        const messageType = removedMessage.role === 'user' ? 'command' : 
+                           removedMessage.role === 'claude' ? 'response' : 'message';
+        this.updateStatus(`Removed last ${messageType}`, 'info');
+    }
+
     updateDownloadButtonVisibility() {
         const downloadBtn = document.getElementById('download-conversation-btn');
         if (!downloadBtn) return;
@@ -1381,7 +1419,7 @@ class RemoteClaudeApp {
                 exportTime: new Date().toISOString(),
                 directory: this.currentDirectory || 'unknown',
                 totalMessages: this.conversationHistory.length,
-                version: 'v0.1.6'
+                version: 'v0.1.7'
             },
             conversation: this.conversationHistory
         };

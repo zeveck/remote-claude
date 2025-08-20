@@ -1,5 +1,25 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.7] - 2025-08-20 - Trim Command Addition
+
+### 💬 New Command Feature
+- **`/trim` Command**: Remove the last message from conversation without sending to Claude
+- **Lightweight Alternative**: Unlike `/clear` which clears everything, `/trim` just removes the last entry
+- **Persistent Updates**: Updates both visual display and JSON conversation history
+- **localStorage Sync**: Changes are saved to browser storage immediately
+
+### 🔧 Technical Implementation
+- **Non-Invasive**: The `/trim` command itself is not added to the conversation
+- **Smart Removal**: Removes last message regardless of type (user command, Claude response, or system message)
+- **Display Rebuild**: Terminal display is rebuilt from updated conversation history
+- **Status Feedback**: Shows what type of message was removed (command/response/message)
+
+### 🎯 User Experience
+- **Quick Correction**: Easily remove accidental or unwanted messages
+- **No Claude Interaction**: Unlike `/clear`, `/trim` doesn't get sent to Claude
+- **Undo-Like Behavior**: Provides a simple way to step back in conversation
+- **Clean History**: Exported JSON reflects the trimmed conversation accurately
+
 ## [0.1.6] - 2025-08-20 - Mobile Keyboard Detection Fix
 
 ### 📱 Mobile Keyboard Handling

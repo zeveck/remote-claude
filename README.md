@@ -176,6 +176,7 @@ remote_term_llm/
 - **Auto-Scroll**: Conversation pane automatically scrolls to show latest messages when loaded
 - **Export Functionality**: Download conversation history as structured JSON
 - **Clear Command**: Type `/clear` to reset conversation and start fresh
+- **Trim Command**: Type `/trim` to remove the last message from conversation (local only, doesn't send to remote Claude instance)
 - **Loading Indicators**: Professional spinner during Claude command execution
 
 ### File Browser
@@ -210,6 +211,7 @@ remote_term_llm/
 
 ## Version History
 
+- **v0.1.7** - Added `/trim` command to remove last message from conversation
 - **v0.1.6** - Fixed mobile keyboard detection issues (especially swipe-to-dismiss)
 - **v0.1.5** - Improved Claude response formatting
 - **v0.1.4** - Auto-scroll enhancement, conversation UX improvements

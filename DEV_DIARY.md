@@ -909,3 +909,37 @@ ion 6: Auto-Scroll Conversation Enhancement
 - **All Dismissal Methods**: Works with swipe, tap outside, done button, and send button
 - **Consistent Behavior**: Same result regardless of how keyboard is closed
 - **No Visual Glitches**: Smooth transitions without layout jumps
+
+### Session 8: Trim Command Feature (v0.1.7)
+**Date**: 2025-08-20  
+**Focus**: Adding `/trim` command for selective message removal
+
+#### Major Accomplishments
+1. **New `/trim` Command**
+   - Removes the last message from conversation history
+   - Unlike `/clear`, doesn't send the command to Claude
+   - Lighter alternative for quick corrections
+
+2. **Implementation Details**
+   - Command interception before Claude API call
+   - Array manipulation with `conversationHistory.pop()`
+   - Terminal display rebuild from updated history
+   - localStorage persistence of trimmed conversation
+
+3. **User Experience Design**
+   - `/trim` command itself not shown in terminal
+   - Status message indicates what was removed
+   - Immediate visual and data updates
+   - Works with exported JSON conversations
+
+#### Technical Approach
+- **Non-Invasive**: Command doesn't appear in conversation
+- **State Management**: Proper update of all conversation state
+- **Display Sync**: `restoreTerminalFromHistory()` rebuilds view
+- **Persistence**: `saveConversationToStorage()` updates localStorage
+
+#### Use Cases
+- **Mistake Correction**: Remove accidental messages
+- **Privacy**: Remove sensitive information before export
+- **Conversation Editing**: Clean up conversation flow
+- **Testing**: Quick removal during development

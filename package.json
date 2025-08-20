@@ -1,6 +1,6 @@
 {
   "name": "remote-claude-web",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Secure web interface for remote Claude Code access",
   "main": "src/server.js",
   "scripts": {
