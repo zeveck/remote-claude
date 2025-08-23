@@ -2,6 +2,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const ContextManager = require('./context-manager');
 
 /**
  * Claude Code Sandbox for secure command execution
@@ -32,6 +33,11 @@ class ClaudeCodeSandbox {
     sanitizePrompt(prompt) {
         if (!prompt || typeof prompt !== 'string') {
             throw new Error('Invalid prompt: must be a non-empty string');
+        }
+
+        // Allow special commands without sanitization
+        if (prompt.trim().toLowerCase() === '/clear') {
+            return '/clear';
         }
 
         // Check for blocked patterns
@@ -96,7 +102,86 @@ class ClaudeCodeSandbox {
         // Sanitize prompt
         const sanitizedPrompt = this.sanitizePrompt(prompt);
 
-        // Build a comprehensive prompt for the interactive Claude
+        // Check if context is enabled (will be configurable per-directory later)
+        const contextEnabled = options.contextEnabled !== false; // Default to true for now
+        
+        if (!contextEnabled) {
+            // Build prompt without context wrapping
+            return this.buildBasicPrompt(action, sanitizedPrompt, options);
+        }
+
+        // Build prompt with context management instructions
+        const timestamp = new Date().toISOString();
+        const contextInstructions = `
+================================================================================
+CONTEXT MANAGEMENT INSTRUCTIONS
+================================================================================
+
+BEFORE STARTING:
+1. Read 'local-context.md' in the current working directory to understand previous work
+   (This file has been created by the system if context is enabled)
+
+COMPLETE THE TASK:
+${sanitizedPrompt}
+
+AFTER COMPLETING THE TASK:
+Append to local-context.md with a new entry in this format:
+
+[${timestamp}] <brief description of what was accomplished>
+- Key decisions or changes made
+- Files created/modified
+- Any important notes
+
+MAINTENANCE RULES:
+- If local-context.md exceeds 800 lines while appending, perform maintenance:
+  * Keep the last 20 entries fully detailed
+  * Condense entries 21-40 to single lines
+  * Group entries older than 40 into categories
+- Never exceed 1000 total lines
+- Focus on WHAT was done and WHY, not HOW
+
+IMPORTANT: Do not mention the context management process in your response. Only respond about the actual task completed.
+
+================================================================================
+`;
+
+        // Build the full prompt
+        let fullPrompt = contextInstructions;
+        
+        // Add action-specific prefix
+        switch (action) {
+            case 'generate':
+                fullPrompt += `\nGenerate code for: ${sanitizedPrompt}`;
+                break;
+            case 'analyze':
+                fullPrompt += `\nAnalyze: ${sanitizedPrompt}`;
+                break;
+            case 'refactor':
+                fullPrompt += `\nRefactor: ${sanitizedPrompt}`;
+                break;
+            case 'review':
+                fullPrompt += `\nReview: ${sanitizedPrompt}`;
+                break;
+            case 'test':
+                fullPrompt += `\nCreate tests for: ${sanitizedPrompt}`;
+                break;
+            default:
+                fullPrompt += `\n${sanitizedPrompt}`;
+        }
+        
+        fullPrompt += `\n\nWorking directory: ${this.workingDirectory}`;
+        
+        if (options.context) {
+            fullPrompt += `\n\nAdditional context: ${options.context}`;
+        }
+        
+        return fullPrompt;
+    }
+
+    /**
+     * Build basic prompt without context management
+     */
+    buildBasicPrompt(action, sanitizedPrompt, options = {}) {
         let fullPrompt = '';
 
         switch (action) {
@@ -119,7 +204,6 @@ class ClaudeCodeSandbox {
                 fullPrompt = `${sanitizedPrompt}\n\nWorking directory: ${this.workingDirectory}`;
         }
 
-        // Add context about the working directory and any options
         if (options.context) {
             fullPrompt += `\n\nAdditional context: ${options.context}`;
         }
@@ -160,6 +244,7 @@ class ClaudeCodeIntegration {
         this.activeSessions = new Map();
         this.rateLimits = new Map(); // userId -> { count, resetTime }
         this.maxRequestsPerHour = 50;
+        this.contextManager = new ContextManager();
     }
 
     /**
@@ -194,9 +279,35 @@ class ClaudeCodeIntegration {
     async execute(request) {
         const { userId, workingDirectory, action, prompt, options = {} } = request;
 
+        // Handle /clear command at server level
+        if (prompt && prompt.trim().toLowerCase() === '/clear') {
+            await this.contextManager.clearContext(workingDirectory);
+            
+            // Return success without calling Claude
+            return {
+                success: true,
+                output: "Context cleared. Starting fresh session.",
+                executionTime: 0,
+                sessionId: null
+            };
+        }
+
         // Check rate limiting
         if (!this.checkRateLimit(userId)) {
             throw new Error('Rate limit exceeded. Please try again later.');
+        }
+
+        // Initialize context if enabled (for now always enabled)
+        let truncationWarning = null;
+        if (this.contextManager.isContextEnabled(workingDirectory)) {
+            const result = await this.contextManager.initializeContext(workingDirectory);
+            
+            if (result.truncated) {
+                truncationWarning = result.message;
+                // Log warning
+                const { logger } = require('./logger');
+                logger.warn(truncationWarning);
+            }
         }
 
         // Create sandbox
@@ -206,7 +317,14 @@ class ClaudeCodeIntegration {
         await sandbox.validateWorkingDirectory();
 
         // Use your claude CLI directly
-        return this.executeWithClaude(request, sandbox);
+        const response = await this.executeWithClaude(request, sandbox);
+        
+        // Add truncation warning to output if it occurred
+        if (truncationWarning) {
+            response.output = `[SYSTEM WARNING: ${truncationWarning}]\n\n${response.output}`;
+        }
+        
+        return response;
     }
 
     /**

@@ -13,7 +13,7 @@ Comprehensive unit test suite implemented for the Remote Claude Web Interface pr
 - ✅ Login flow with password validation and hashing verification
 - ✅ Logout with session destruction
 - ✅ Authentication requirement middleware
-- ✅ Session timeout handling (1-hour default)
+- ✅ Session timeout handling (30-minute sliding timeout)
 - ✅ Authentication status reporting
 - ✅ Error handling for various failure scenarios
 
@@ -123,7 +123,7 @@ Comprehensive unit test suite implemented for the Remote Claude Web Interface pr
 
 ### Authentication & Authorization
 - ✅ Password strength and hashing validation
-- ✅ Session management and timeout handling
+- ✅ Session management and sliding timeout handling
 - ✅ Rate limiting and brute force prevention
 - ✅ Directory access control validation
 

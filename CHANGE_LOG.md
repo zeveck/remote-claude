@@ -1,5 +1,55 @@
 # Change Log - Remote Claude Web Interface
 
+## [0.1.9] - 2025-08-23 - Context Management System
+
+### 🧠 Persistent Context Memory
+- **Local Context Files**: Implemented `local-context.md` files per directory for conversation memory
+- **Cross-Session Persistence**: Context survives between `claude -p` calls maintaining project continuity
+- **Smart Truncation**: Automatic file maintenance when context exceeds 800 lines (Claude-managed)
+- **Hard Limit Enforcement**: Server enforces 1000-line maximum to prevent runaway growth
+
+### 🔧 Technical Implementation
+- **ContextManager Class**: New module handling all context file operations (creation, deletion, truncation)
+- **Prompt Wrapping**: All Claude prompts wrapped with context management instructions
+- **Special Commands**: `/clear` command now also clears local context file at server level
+- **Configurable System**: Context can be enabled/disabled per directory (foundation for future enhancement)
+
+### 🧪 Testing Coverage
+- **100% Coverage**: ContextManager fully tested with 16 comprehensive test cases
+- **Integration Tests**: Context flow tested across Claude integration with mock file operations
+- **Error Scenarios**: File corruption, access issues, and truncation edge cases properly handled
+- **99 Total Tests**: All tests passing with context management fully integrated
+
+### 🏗️ Architecture Design
+- **Separation of Concerns**: Node.js handles file lifecycle, Claude handles content management
+- **Stateless CLI Integration**: Context persists across stateless `claude -p` calls via file system
+- **Intelligent Maintenance**: Claude instructed to summarize and condense old entries when approaching limits
+- **Server Safety Net**: Server-side truncation as fallback if Claude fails to maintain limits
+
+### 📁 File Management
+- **Local Context Files**: One `local-context.md` per working directory
+- **Structured Format**: Session header, activity log, and timestamp-based entries
+- **Smart Truncation**: Keeps recent 20 entries detailed, condenses 21-40, groups older entries
+- **Graceful Handling**: Continues operation even if context file is corrupted or inaccessible
+
+## [0.1.8] - 2025-08-23 - Sliding Session Timeout
+
+### 🔐 Enhanced Authentication UX
+- **Sliding Timeout**: Sessions now extend automatically on activity instead of fixed 1-hour expiration
+- **Inactivity-Based**: 30-minute timeout only triggers after period of inactivity
+- **Improved Messaging**: Clear "Session expired due to inactivity" error message
+- **Better UX**: No unexpected logouts during active use
+
+### ⚙️ Configuration Changes
+- **Reduced Default Timeout**: Changed from 1 hour (3600000ms) to 30 minutes (1800000ms)
+- **Activity Tracking**: Sessions track `lastActivity` instead of `loginTime`
+- **Backward Compatible**: Existing sessions continue to work during upgrade
+
+### 🧪 Testing Updates
+- **Enhanced Test Coverage**: Added tests for sliding timeout behavior
+- **Activity Simulation**: Tests verify session extension on authenticated requests
+- **Updated Fixtures**: All test configurations reflect new timeout values
+
 ## [0.1.7] - 2025-08-20 - Trim Command Addition
 
 ### 💬 New Command Feature

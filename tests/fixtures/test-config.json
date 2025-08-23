@@ -9,7 +9,7 @@
   },
   "auth": {
     "sessionSecret": "test-secret-key-for-testing-only",
-    "sessionTimeout": 3600000,
+    "sessionTimeout": 1800000,
     "maxLoginAttempts": 5,
     "passwordFile": "tests/fixtures/test-passwd.txt"
   },

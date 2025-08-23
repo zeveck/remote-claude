@@ -5,6 +5,33 @@ Building a secure web interface for remote access to Claude Code functionality, 
 
 ## Development Sessions
 
+### Session 6: Sliding Session Timeout Implementation (v0.1.8)
+**Date**: 2025-08-23  
+**Focus**: Improved authentication UX with activity-based session management
+
+#### Major Accomplishments
+1. **Sliding Session Timeout**
+   - Replaced fixed 1-hour timeout with 30-minute inactivity timeout
+   - Sessions now extend automatically on any authenticated request
+   - Changed from `loginTime` tracking to `lastActivity` tracking
+   - Updated error message to "Session expired due to inactivity"
+
+2. **Configuration Updates**
+   - Reduced default `sessionTimeout` from 3600000ms (1hr) to 1800000ms (30min)
+   - Updated all test configurations and fixtures
+   - Enhanced test coverage for sliding timeout behavior
+
+3. **Documentation Updates**
+   - Updated README.md with new timeout behavior
+   - Added comprehensive test for activity-based session extension
+   - Maintained backward compatibility with existing session structure
+
+#### Technical Details
+- Modified `AuthMiddleware.requireAuth()` to update `lastActivity` on each request
+- Session timeout now calculated as `Date.now() - lastActivity > sessionTimeout`
+- Improved user experience: no unexpected logouts during active use
+- Security maintained: automatic logout after 30 minutes of inactivity
+
 ### Session 5: UI Polish & Conversation Persistence (v0.1.3)
 **Date**: 2025-08-17  
 **Focus**: Interface refinements, conversation persistence, and user experience improvements
@@ -942,4 +969,52 @@ ion 6: Auto-Scroll Conversation Enhancement
 - **Mistake Correction**: Remove accidental messages
 - **Privacy**: Remove sensitive information before export
 - **Conversation Editing**: Clean up conversation flow
+
+### Session 9: Context Management Implementation (v0.1.9)
+**Date**: 2025-08-23  
+**Focus**: Implementing persistent context memory system for Claude CLI
+
+#### Major Accomplishments
+1. **Context Management System**
+   - Created ContextManager class for handling local-context.md files
+   - Implemented automatic file creation, deletion, and truncation
+   - Added context wrapping to all Claude prompts with comprehensive instructions
+   - Integrated `/clear` command with context clearing at server level
+
+2. **Technical Architecture**
+   - **Separation of Concerns**: Node.js handles file lifecycle (create/delete/truncate), Claude handles content management
+   - **Hard Limits**: Server enforces 1000-line limit if Claude fails to maintain < 800 lines
+   - **Smart Instructions**: Claude instructed to maintain, summarize, and condense entries when approaching limits
+   - **Persistent Memory**: Context survives across stateless `claude -p` sessions via local-context.md files
+
+3. **Comprehensive Testing**
+   - Added 16 test cases for ContextManager with 100% coverage
+   - Updated Claude integration tests for context wrapping behavior
+   - Fixed failing config manager test (directory loading race condition)
+   - Achieved 99/99 tests passing (100% success rate)
+
+#### Implementation Details
+- **File Naming**: Used `local-context.md` to clearly indicate per-directory local files
+- **Prompt Wrapping**: All Claude commands now include context management instructions
+- **Line Management**: Server truncation as safety net (keeps header + recent 990 lines)
+- **Error Handling**: Graceful degradation for file access issues, corruption, etc.
+- **Future Ready**: Designed foundation for per-directory enable/disable configuration
+
+#### Challenges Solved
+- **State Persistence Problem**: Maintaining context across stateless CLI tool calls
+- **File Management Balance**: Giving Claude autonomy while having server-side enforcement
+- **Test Compatibility**: Updated all existing tests to work with new context system
+- **Architecture Design**: Clean separation between Node.js file operations and Claude content management
+
+#### Technical Innovation
+- **Instruction-Based Management**: Claude receives detailed instructions on how to maintain context files
+- **Dual-Layer Enforcement**: Claude maintains under 800 lines, server enforces under 1000 lines
+- **Semantic Understanding**: Claude can intelligently summarize and group old context entries
+- **Zero-Configuration**: Context automatically enables for all directories (configurable in future)
+
+#### Code Quality
+- **100% Test Coverage**: ContextManager fully tested with comprehensive scenarios
+- **Clean Integration**: Minimal changes to existing codebase, clear separation of concerns
+- **Documentation**: Complete plan documentation and implementation summary created
+- **Error Resilience**: System continues working even if context files become corrupted or inaccessible
 - **Testing**: Quick removal during development

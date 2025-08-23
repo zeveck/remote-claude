@@ -1140,8 +1140,30 @@ class RemoteClaudeApp {
             // Add command to terminal first
             this.addToTerminal(command, 'command');
 
-            // Clear conversation and display
+            // Clear local conversation
             this.clearCurrentConversation();
+
+            // Send /clear to backend to clear context.md
+            try {
+                const response = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'generate', // Use any valid action
+                        prompt: '/clear'
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    // Show confirmation from server
+                    if (data.success && data.result && data.result.output) {
+                        this.addToTerminal(data.result.output, 'system');
+                    }
+                }
+            } catch (error) {
+                console.error('Error clearing context:', error);
+            }
 
             // Clear input
             input.value = '';

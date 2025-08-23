@@ -137,7 +137,7 @@ class AuthMiddleware {
         // Successful login
         this.resetAttempts(clientIP);
         req.session.authenticated = true;
-        req.session.loginTime = Date.now();
+        req.session.lastActivity = Date.now();
         
         res.json({
           success: true,
@@ -199,16 +199,19 @@ class AuthMiddleware {
         });
       }
       
-      // Check session timeout
-      const sessionAge = Date.now() - req.session.loginTime;
-      if (sessionAge > this.config.auth.sessionTimeout) {
+      // Check session timeout (sliding window based on last activity)
+      const timeSinceActivity = Date.now() - req.session.lastActivity;
+      if (timeSinceActivity > this.config.auth.sessionTimeout) {
         req.session.destroy();
         return res.status(401).json({
           success: false,
-          error: 'Session expired',
+          error: 'Session expired due to inactivity',
           needsLogin: true
         });
       }
+      
+      // Update last activity time for sliding timeout
+      req.session.lastActivity = Date.now();
       
       next();
     };

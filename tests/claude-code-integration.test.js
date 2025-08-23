@@ -8,7 +8,10 @@ jest.mock('child_process');
 // Mock fs.promises
 jest.mock('fs', () => ({
   promises: {
-    access: jest.fn()
+    access: jest.fn(),
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+    unlink: jest.fn()
   }
 }));
 
@@ -146,39 +149,54 @@ describe('ClaudeCodeSandbox', () => {
   });
 
   describe('buildClaudePrompt', () => {
-    it('should build prompt for generate action', () => {
+    it('should build prompt for generate action with context management', () => {
       const result = sandbox.buildClaudePrompt('generate', 'Create a function', {});
+      
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Generate code for: Create a function');
+      expect(result).toContain(`Working directory: ${testWorkingDir}`);
+      expect(result).toContain('Read \'local-context.md\' in the current working directory');
+      expect(result).toContain('Append to local-context.md with a new entry');
+    });
+
+    it('should build basic prompt when context disabled', () => {
+      const result = sandbox.buildClaudePrompt('generate', 'Create a function', { contextEnabled: false });
       
       expect(result).toContain('Please generate code based on this request: Create a function');
       expect(result).toContain('production-ready');
       expect(result).toContain(`Working directory: ${testWorkingDir}`);
+      expect(result).not.toContain('CONTEXT MANAGEMENT');
     });
 
-    it('should build prompt for analyze action', () => {
+    it('should build prompt for analyze action with context management', () => {
       const result = sandbox.buildClaudePrompt('analyze', 'Review this code', {});
       
-      expect(result).toContain('Please analyze the following request and provide insights: Review this code');
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Analyze: Review this code');
       expect(result).toContain(`Working directory: ${testWorkingDir}`);
     });
 
-    it('should build prompt for refactor action', () => {
+    it('should build prompt for refactor action with context management', () => {
       const result = sandbox.buildClaudePrompt('refactor', 'Improve this code', {});
       
-      expect(result).toContain('Please help refactor code based on this request: Improve this code');
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Refactor: Improve this code');
       expect(result).toContain(`Working directory: ${testWorkingDir}`);
     });
 
-    it('should build prompt for review action', () => {
+    it('should build prompt for review action with context management', () => {
       const result = sandbox.buildClaudePrompt('review', 'Check this implementation', {});
       
-      expect(result).toContain('Please review and provide feedback on: Check this implementation');
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Review: Check this implementation');
       expect(result).toContain(`Working directory: ${testWorkingDir}`);
     });
 
-    it('should build prompt for test action', () => {
+    it('should build prompt for test action with context management', () => {
       const result = sandbox.buildClaudePrompt('test', 'Create tests for function', {});
       
-      expect(result).toContain('Please help create tests for: Create tests for function');
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Create tests for: Create tests for function');
       expect(result).toContain(`Working directory: ${testWorkingDir}`);
     });
 
@@ -193,6 +211,14 @@ describe('ClaudeCodeSandbox', () => {
       const result = sandbox.buildClaudePrompt('generate', 'Create function', options);
       
       expect(result).toContain('Additional context: This is additional context');
+    });
+
+    it('should include context wrapping even for /clear command', () => {
+      const result = sandbox.buildClaudePrompt('generate', '/clear', {});
+      
+      expect(result).toContain('CONTEXT MANAGEMENT INSTRUCTIONS');
+      expect(result).toContain('Generate code for: /clear');
+      expect(result).toContain(`Working directory: ${testWorkingDir}`);
     });
 
     it('should sanitize prompt during build', () => {
@@ -314,6 +340,20 @@ describe('ClaudeCodeIntegration', () => {
 
     beforeEach(() => {
       fs.access.mockResolvedValue();
+      fs.readFile.mockResolvedValue('# Session Context\n\n## Activity Log\n');
+      fs.writeFile.mockResolvedValue();
+      fs.unlink.mockResolvedValue();
+    });
+
+    it('should handle /clear command', async () => {
+      const clearRequest = { ...mockRequest, prompt: '/clear' };
+      
+      const result = await integration.execute(clearRequest);
+      
+      expect(result.success).toBe(true);
+      expect(result.output).toBe('Context cleared. Starting fresh session.');
+      expect(result.executionTime).toBe(0);
+      expect(result.sessionId).toBe(null);
     });
 
     it('should reject if rate limited', async () => {
@@ -325,6 +365,37 @@ describe('ClaudeCodeIntegration', () => {
       await expect(integration.execute(mockRequest)).rejects.toThrow(
         'Rate limit exceeded. Please try again later.'
       );
+    });
+
+    it('should initialize context before execution', async () => {
+      // Mock successful execution
+      const mockResult = { success: true, output: 'test output' };
+      integration.executeWithClaude = jest.fn().mockResolvedValue(mockResult);
+      
+      const result = await integration.execute(mockRequest);
+      
+      // Should have attempted to read context file
+      expect(fs.access).toHaveBeenCalled();
+      expect(integration.executeWithClaude).toHaveBeenCalledWith(
+        mockRequest,
+        expect.any(Object) // ClaudeCodeSandbox instance
+      );
+      expect(result).toBe(mockResult);
+    });
+
+    it('should handle context truncation warning', async () => {
+      // Mock file with too many lines
+      const longContent = Array(1100).fill('line').join('\n');
+      fs.readFile.mockResolvedValue(longContent);
+      
+      // Mock successful execution
+      const mockResult = { success: true, output: 'test output' };
+      integration.executeWithClaude = jest.fn().mockResolvedValue(mockResult);
+      
+      const result = await integration.execute(mockRequest);
+      
+      expect(result.output).toContain('[SYSTEM WARNING:');
+      expect(result.output).toContain('Context file was forcibly truncated');
     });
 
     it('should call executeWithClaude for valid request', async () => {

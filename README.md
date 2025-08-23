@@ -93,7 +93,7 @@ The application uses `config/default.json` for configuration:
   },
   "auth": {
     "sessionSecret": null,       // Auto-generated secure secret
-    "sessionTimeout": 3600000,   // 1 hour
+    "sessionTimeout": 1800000,   // 30 minutes of inactivity
     "maxLoginAttempts": 5
   },
   "security": {

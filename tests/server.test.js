@@ -10,7 +10,7 @@ jest.mock('../src/ssl-manager');
 jest.mock('../config/default.json', () => ({
   server: { port: 3443, host: '0.0.0.0' },
   ssl: { keyPath: './config/ssl/server.key', certPath: './config/ssl/server.crt' },
-  auth: { sessionSecret: 'test', sessionTimeout: 3600000, maxLoginAttempts: 5 },
+  auth: { sessionSecret: 'test', sessionTimeout: 1800000, maxLoginAttempts: 5 },
   claude: { timeout: 30000, maxConcurrent: 3, rateLimit: { requests: 100, window: 60000 } },
   security: { allowedDirectoriesFile: './config/allow-dirs.txt', passwordFile: './config/passwd.txt' }
 }), { virtual: true });

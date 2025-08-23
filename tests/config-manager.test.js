@@ -83,10 +83,16 @@ describe('ConfigManager', () => {
       fs.mkdirSync(tempDir2, { recursive: true });
       
       // Save directories
-      configManager.saveAllowedDirectories([tempDir1, tempDir2]);
+      const savedDirectories = configManager.saveAllowedDirectories([tempDir1, tempDir2]);
+      expect(savedDirectories).toContain(tempDir1);
+      expect(savedDirectories).toContain(tempDir2);
+      
+      // Verify file was created
+      expect(fs.existsSync(testConfig.security.allowedDirectoriesFile)).toBe(true);
       
       // Load and verify
       const loaded = configManager.loadAllowedDirectories();
+      expect(loaded).toHaveLength(2);
       expect(loaded).toContain(tempDir1);
       expect(loaded).toContain(tempDir2);
       

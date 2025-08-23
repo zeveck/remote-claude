@@ -16,7 +16,7 @@ describe('AuthMiddleware', () => {
     mockConfig = {
       auth: {
         sessionSecret: 'test-secret',
-        sessionTimeout: 3600000,
+        sessionTimeout: 1800000,
         maxLoginAttempts: 5
       }
     };
@@ -200,7 +200,7 @@ describe('AuthMiddleware', () => {
         message: 'Login successful'
       });
       expect(mockReq.session.authenticated).toBe(true);
-      expect(mockReq.session.loginTime).toBeCloseTo(Date.now(), -2);
+      expect(mockReq.session.lastActivity).toBeCloseTo(Date.now(), -2);
     });
 
     it('should return 429 for rate limited IP', async () => {
@@ -294,11 +294,11 @@ describe('AuthMiddleware', () => {
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should return 401 if session expired', () => {
+    it('should return 401 if session expired due to inactivity', () => {
       mockConfigManager.isPasswordConfigured.mockReturnValue(true);
       mockReq.session = {
         authenticated: true,
-        loginTime: Date.now() - (2 * 3600000), // 2 hours ago
+        lastActivity: Date.now() - (2 * 1800000), // 1 hour ago (2x timeout)
         destroy: jest.fn()
       };
       
@@ -308,23 +308,38 @@ describe('AuthMiddleware', () => {
       expect(mockRes.status).toHaveBeenCalledWith(401);
       expect(mockRes.json).toHaveBeenCalledWith({
         success: false,
-        error: 'Session expired',
+        error: 'Session expired due to inactivity',
         needsLogin: true
       });
       expect(mockNext).not.toHaveBeenCalled();
     });
 
-    it('should call next() for valid authenticated session', () => {
+    it('should call next() for valid authenticated session and update lastActivity', () => {
+      const initialTime = Date.now() - 1000; // 1 second ago
       mockConfigManager.isPasswordConfigured.mockReturnValue(true);
       mockReq.session = {
         authenticated: true,
-        loginTime: Date.now() - 1000 // 1 second ago
+        lastActivity: initialTime
       };
       
       authHandler(mockReq, mockRes, mockNext);
       
       expect(mockNext).toHaveBeenCalled();
       expect(mockRes.status).not.toHaveBeenCalled();
+      expect(mockReq.session.lastActivity).toBeGreaterThan(initialTime);
+    });
+
+    it('should extend session on activity (sliding timeout)', () => {
+      mockConfigManager.isPasswordConfigured.mockReturnValue(true);
+      mockReq.session = {
+        authenticated: true,
+        lastActivity: Date.now() - 1000000 // 16+ minutes ago but less than 30
+      };
+      
+      authHandler(mockReq, mockRes, mockNext);
+      
+      expect(mockNext).toHaveBeenCalled();
+      expect(mockReq.session.lastActivity).toBeCloseTo(Date.now(), -2); // Within 100ms
     });
   });
 

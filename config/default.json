@@ -10,7 +10,7 @@
   },
   "auth": {
     "sessionSecret": null,
-    "sessionTimeout": 3600000,
+    "sessionTimeout": 1800000,
     "maxLoginAttempts": 5
   },
   "claude": {
