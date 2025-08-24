@@ -17,12 +17,11 @@ const NetworkUtils = require('./network-utils');
 // Determine host based on configuration
 let HOST;
 if (config.server.allowNetworkAccess) {
-  HOST = config.server.host === 'auto' ? NetworkUtils.getPrimaryNetworkIP() : config.server.host;
-  if (HOST !== '127.0.0.1') {
-    logger.info('🌐 Network access enabled - binding to specific interface');
-    logger.info(`📍 Primary network IP: ${HOST}`);
-    logger.warn('⚠️  Access restricted to local network IPs only');
-  }
+  // Bind to all interfaces but use IP whitelist for security
+  HOST = '0.0.0.0';
+  logger.info('🌐 Network access enabled - binding to all interfaces');
+  logger.info(`📍 Primary network IP: ${NetworkUtils.getPrimaryNetworkIP()}`);
+  logger.warn('⚠️  Access restricted to local network IPs only');
 } else {
   HOST = '127.0.0.1';
   logger.info('🔒 Local access only - binding to localhost');
