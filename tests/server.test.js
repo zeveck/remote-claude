@@ -40,8 +40,7 @@ describe('Server', () => {
 
     const { ClaudeCodeIntegration } = require('../src/claude-code-integration');
     ClaudeCodeIntegration.mockImplementation(() => ({
-      execute: jest.fn(() => ({ success: true, output: 'test' })),
-      parseResponse: jest.fn(() => ({ result: 'test' }))
+      execute: jest.fn(() => ({ success: true, output: 'test' }))
     }));
     
     // Clear and re-import app

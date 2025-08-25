@@ -342,7 +342,7 @@ class ClaudeCodeIntegration {
             let stderr = '';
 
             // Spawn claude process in headless mode with -p flag and skip permissions
-            const args = ['-p', '--output-format', 'json', '--dangerously-skip-permissions'];
+            const args = ['-p', '--dangerously-skip-permissions'];
             
             // Construct command safely to avoid deprecation warning and injection
             // Validate args are safe (no shell metacharacters)
@@ -384,6 +384,21 @@ class ClaudeCodeIntegration {
                 clearTimeout(timeout);
                 const executionTime = Date.now() - startTime;
 
+                // Log Claude's response for debugging
+                const { logger } = require('./logger');
+                logger.info('Claude process completed', {
+                    exitCode: code,
+                    executionTime,
+                    stdoutLength: stdout.length,
+                    stderrLength: stderr.length,
+                    hasOutput: !!stdout,
+                    outputPreview: stdout.substring(0, 100) // First 100 chars for debugging
+                });
+
+                if (!stdout && code === 0) {
+                    logger.warn('Claude returned success but no output - this is unusual');
+                }
+
                 if (code === 0) {
                     resolve({
                         success: true,
@@ -409,23 +424,6 @@ class ClaudeCodeIntegration {
                 process: child
             });
         });
-    }
-
-    /**
-     * Parse Claude Code JSON response
-     */
-    parseResponse(output) {
-        try {
-            // Try to parse as JSON first
-            return JSON.parse(output);
-        } catch (error) {
-            // If not JSON, return as plain text response
-            return {
-                type: 'text',
-                content: output,
-                timestamp: new Date().toISOString()
-            };
-        }
     }
 
     /**

@@ -1231,27 +1231,20 @@ class RemoteClaudeApp {
                 this.addToTerminal(successMessage);
                 this.addToConversationHistory('system', successMessage);
 
+                // Extract Claude's response from the result
                 let claudeResponse = '';
-                if (data.result.parsedOutput) {
-                    if (data.result.parsedOutput.type === 'result') {
-                        // Handle Claude CLI JSON response - clean and simple
-                        claudeResponse = data.result.parsedOutput.result;
+                if (data.result.claudeOutput && data.result.claudeOutput.content !== undefined) {
+                    claudeResponse = data.result.claudeOutput.content;
+                    if (claudeResponse) {
                         this.addToTerminal(claudeResponse);
-                    } else if (data.result.parsedOutput.type === 'text') {
-                        claudeResponse = data.result.parsedOutput.content;
-                        this.addToTerminal(claudeResponse);
+                        this.addToConversationHistory('claude', claudeResponse);
                     } else {
-                        // Handle other JSON responses
-                        claudeResponse = JSON.stringify(data.result.parsedOutput, null, 2);
-                        this.addToTerminal(claudeResponse);
+                        // Claude returned empty response - show feedback
+                        const emptyMsg = '(No response from Claude)';
+                        this.addToTerminal(emptyMsg, 'system');
+                        console.log('Claude returned empty response - check server logs for details');
                     }
-                } else {
-                    claudeResponse = data.result.output;
-                    this.addToTerminal(claudeResponse);
                 }
-
-                // Track Claude's response in conversation history
-                this.addToConversationHistory('claude', claudeResponse);
 
                 // Refresh files to show any changes
                 this.refreshFiles();

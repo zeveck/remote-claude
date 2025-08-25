@@ -445,7 +445,7 @@ describe('ClaudeCodeIntegration', () => {
 
       const promise = integration.executeWithClaude(mockRequest, mockSandbox);
       
-      expect(spawn).toHaveBeenCalledWith('claude -p --output-format json --dangerously-skip-permissions', 
+      expect(spawn).toHaveBeenCalledWith('claude -p --dangerously-skip-permissions', 
         [],
         {
           cwd: mockSandbox.workingDirectory,
@@ -544,39 +544,6 @@ describe('ClaudeCodeIntegration', () => {
       await integration.executeWithClaude(mockRequest, mockSandbox);
       
       expect(integration.activeSessions.has(mockSandbox.sessionId)).toBe(true);
-    });
-  });
-
-  describe('parseResponse', () => {
-    it('should parse valid JSON response', () => {
-      const jsonOutput = '{"type": "success", "content": "Generated code"}';
-      const result = integration.parseResponse(jsonOutput);
-      
-      expect(result).toEqual({
-        type: 'success',
-        content: 'Generated code'
-      });
-    });
-
-    it('should handle non-JSON response', () => {
-      const textOutput = 'This is plain text output';
-      const result = integration.parseResponse(textOutput);
-      
-      expect(result).toEqual({
-        type: 'text',
-        content: textOutput,
-        timestamp: expect.any(String)
-      });
-    });
-
-    it('should handle empty response', () => {
-      const result = integration.parseResponse('');
-      
-      expect(result).toEqual({
-        type: 'text',
-        content: '',
-        timestamp: expect.any(String)
-      });
     });
   });
 

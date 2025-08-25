@@ -265,14 +265,18 @@ app.post('/api/command',
     // Execute Claude Code command
     const result = await claudeCodeIntegration.execute(request);
 
-    // Parse response
-    const parsedResponse = claudeCodeIntegration.parseResponse(result.output);
+    // Wrap Claude's output
+    const claudeOutput = {
+      type: 'text',
+      content: result.output || '',
+      timestamp: new Date().toISOString()
+    };
 
     res.json({
       success: true,
       result: {
         ...result,
-        parsedOutput: parsedResponse
+        claudeOutput
       },
       message: `Claude Code ${action} completed successfully`
     });
