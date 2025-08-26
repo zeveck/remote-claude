@@ -1,9 +1,11 @@
 const express = require('express');
 const https = require('https');
 const path = require('path');
+const { Server } = require('socket.io');
 const SSLManager = require('./ssl-manager');
 const AuthMiddleware = require('./auth-middleware');
 const ValidationMiddleware = require('./validation-middleware');
+const WebSocketManager = require('./websocket-manager');
 const { logger } = require('./logger');
 
 // Load configuration
@@ -100,6 +102,9 @@ const claudeCodeIntegration = new ClaudeCodeIntegration();
 const ChatLogManager = require('./chat-log-manager');
 const chatLogManager = new ChatLogManager(config);
 
+// WebSocket manager will be initialized after server creation
+let webSocketManager = null;
+
 // Protected routes (require authentication)
 app.get('/api/status', authMiddleware.requireAuth(), (req, res) => {
   res.json({
@@ -107,6 +112,7 @@ app.get('/api/status', authMiddleware.requireAuth(), (req, res) => {
     message: 'Remote Claude Web Interface is running',
     ssl: true,
     authenticated: true,
+    sessionId: req.session.id,
     timestamp: new Date().toISOString()
   });
 });
@@ -306,6 +312,23 @@ app.post('/api/chatlog',
 
     await chatLogManager.appendMessage(currentDirectory, message);
 
+    // Broadcast new message to other users in the same directory
+    if (app.locals.webSocketManager) {
+      try {
+        app.locals.webSocketManager.broadcastNewMessage(
+          currentDirectory, 
+          message, 
+          req.session.id // exclude the sender from broadcast
+        );
+      } catch (broadcastError) {
+        // Log broadcast errors but don't fail the request
+        logger.error('WebSocket broadcast failed', { 
+          error: broadcastError.message, 
+          stack: broadcastError.stack 
+        });
+      }
+    }
+
     res.json({
       success: true,
       message: 'Message saved to chat log'
@@ -341,6 +364,22 @@ app.delete('/api/chatlog/clear', authMiddleware.requireAuth(), async (req, res) 
     }
 
     await chatLogManager.clearChatLog(currentDirectory);
+
+    // Broadcast chat cleared to other users in the same directory
+    if (app.locals.webSocketManager) {
+      try {
+        app.locals.webSocketManager.broadcastChatCleared(
+          currentDirectory, 
+          req.session.id // exclude the user who cleared it
+        );
+      } catch (broadcastError) {
+        // Log broadcast errors but don't fail the request
+        logger.error('WebSocket broadcast failed', { 
+          error: broadcastError.message, 
+          stack: broadcastError.stack 
+        });
+      }
+    }
 
     res.json({
       success: true,
@@ -384,6 +423,22 @@ app.post('/api/command',
       });
     }
 
+    // Broadcast command started to other users in the same directory
+    if (app.locals.webSocketManager) {
+      try {
+        app.locals.webSocketManager.broadcastCommandStarted(
+          currentDirectory,
+          prompt,
+          req.session.id // exclude the sender
+        );
+      } catch (broadcastError) {
+        logger.error('WebSocket command-started broadcast failed', { 
+          error: broadcastError.message, 
+          stack: broadcastError.stack 
+        });
+      }
+    }
+
     // Create request object
     const request = {
       userId: req.session.id || 'anonymous',
@@ -395,6 +450,22 @@ app.post('/api/command',
 
     // Execute Claude Code command
     const result = await claudeCodeIntegration.execute(request);
+
+    // Broadcast command completed successfully to other users
+    if (app.locals.webSocketManager) {
+      try {
+        app.locals.webSocketManager.broadcastCommandCompleted(
+          currentDirectory,
+          true, // success
+          req.session.id // exclude the sender
+        );
+      } catch (broadcastError) {
+        logger.error('WebSocket command-completed broadcast failed', { 
+          error: broadcastError.message, 
+          stack: broadcastError.stack 
+        });
+      }
+    }
 
     // Wrap Claude's output
     const claudeOutput = {
@@ -414,6 +485,22 @@ app.post('/api/command',
 
   } catch (error) {
     logger.error('Claude Code execution error', { error: error.message, stack: error.stack });
+
+    // Broadcast command completed with error to other users
+    if (app.locals.webSocketManager) {
+      try {
+        app.locals.webSocketManager.broadcastCommandCompleted(
+          req.session.currentDirectory,
+          false, // error
+          req.session.id // exclude the sender
+        );
+      } catch (broadcastError) {
+        logger.error('WebSocket command-completed (error) broadcast failed', { 
+          error: broadcastError.message, 
+          stack: broadcastError.stack 
+        });
+      }
+    }
 
     // Handle specific error types
     if (error.message.includes('Rate limit exceeded')) {
@@ -464,6 +551,22 @@ function startServer() {
 
     // Create HTTPS server
     const server = https.createServer(sslOptions, app);
+
+    // Initialize Socket.IO with the HTTPS server
+    const io = new Server(server, {
+      cors: {
+        origin: true, // Allow all origins for development
+        methods: ["GET", "POST"],
+        credentials: true
+      },
+      allowEIO3: true
+    });
+
+    // Initialize WebSocket manager
+    webSocketManager = new WebSocketManager(io);
+    
+    // Make webSocketManager available to route handlers
+    app.locals.webSocketManager = webSocketManager;
 
     server.listen(PORT, HOST, () => {
       const os = require('os');

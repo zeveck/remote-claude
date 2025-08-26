@@ -24,6 +24,15 @@ class RemoteClaudeApp {
         this.initialDirectoryPath = null;
         this.sessionStartTime = new Date().toISOString();
 
+        // WebSocket properties
+        this.socket = null;
+        this.isSocketConnected = false;
+        this.currentSession = null;
+        this.syncStatus = 'disconnected'; // disconnected, connecting, connected, synced
+        this.activeUsers = [];
+        this.remoteCommandExecuting = false; // Track if another user is executing command
+        this.localCommandExecuting = false; // Track if this user is executing command
+
         this.init();
     }
 
@@ -38,6 +47,9 @@ class RemoteClaudeApp {
 
         // Fix mobile viewport height issues
         this.fixMobileViewport();
+
+        // Initialize WebSocket connection
+        this.initializeWebSocket();
 
         // Check authentication status
         await this.checkAuthStatus();
@@ -224,9 +236,304 @@ class RemoteClaudeApp {
         }
     }
 
+    // WebSocket Methods
+    initializeWebSocket() {
+        try {
+            if (typeof io !== 'undefined') {
+                this.socket = io({
+                    transports: ['websocket', 'polling'],
+                    upgrade: true,
+                    rememberUpgrade: true
+                });
+
+                this.setupWebSocketEventHandlers();
+                this.updateSyncStatus('connecting');
+                console.log('WebSocket initialization started');
+            } else {
+                console.warn('Socket.IO not loaded, real-time features disabled');
+            }
+        } catch (error) {
+            console.error('Failed to initialize WebSocket:', error);
+            this.updateSyncStatus('disconnected');
+        }
+    }
+
+    setupWebSocketEventHandlers() {
+        if (!this.socket) return;
+
+        // Connection events
+        this.socket.on('connect', () => {
+            console.log('WebSocket connected');
+            this.isSocketConnected = true;
+            this.updateSyncStatus('synced'); // Connected = synced (green)
+            
+            // Join directory room if we have one selected
+            if (this.initialDirectoryPath) {
+                this.joinDirectoryRoom(this.initialDirectoryPath);
+            }
+        });
+
+        this.socket.on('disconnect', (reason) => {
+            console.log('WebSocket disconnected:', reason);
+            this.isSocketConnected = false;
+            this.updateSyncStatus('disconnected');
+            this.activeUsers = [];
+            this.updateUserPresence();
+            
+            // Clear remote command state if we were waiting for one to complete
+            if (this.remoteCommandExecuting) {
+                this.handleRemoteCommandCompleted({
+                    success: false,
+                    directoryPath: this.initialDirectoryPath
+                });
+            }
+        });
+
+        this.socket.on('connect_error', (error) => {
+            console.error('WebSocket connection error:', error);
+            this.updateSyncStatus('disconnected');
+        });
+
+        // Chat events
+        this.socket.on('new-message', (data) => {
+            this.handleIncomingMessage(data);
+        });
+
+        this.socket.on('chat-cleared', (data) => {
+            this.handleChatCleared(data);
+        });
+
+        // Room events
+        this.socket.on('user-joined', (data) => {
+            console.log('User joined:', data);
+            // No notification - too noisy
+        });
+
+        this.socket.on('user-left', (data) => {
+            console.log('User left:', data);
+            // No notification - too noisy
+        });
+
+        this.socket.on('room-status', (data) => {
+            this.handleRoomStatus(data);
+        });
+
+        // Typing indicators
+        this.socket.on('user-typing-start', (data) => {
+            this.handleUserTypingStart(data);
+        });
+
+        this.socket.on('user-typing-stop', (data) => {
+            this.handleUserTypingStop(data);
+        });
+
+        // Command execution events
+        this.socket.on('command-started', (data) => {
+            this.handleRemoteCommandStarted(data);
+        });
+
+        this.socket.on('command-completed', (data) => {
+            this.handleRemoteCommandCompleted(data);
+        });
+    }
+
+    async joinDirectoryRoom(directoryPath) {
+        if (!this.socket || !this.isSocketConnected) return;
+
+        // Ensure we have server's session ID before joining
+        if (!this.currentSession) {
+            await this.fetchSessionId();
+        }
+        
+        this.socket.emit('join-directory', {
+            sessionId: this.currentSession,
+            directoryPath: directoryPath
+        });
+
+        console.log('Joined directory room:', directoryPath, 'with session ID:', this.currentSession);
+    }
+
+    leaveDirectoryRoom() {
+        if (!this.socket || !this.isSocketConnected) return;
+
+        this.socket.emit('leave-directory', {
+            sessionId: this.currentSession
+        });
+
+        console.log('Left directory room');
+    }
+
+    handleIncomingMessage(data) {
+        const { message, directoryPath } = data;
+
+        // Only process messages for the current directory
+        if (directoryPath !== this.initialDirectoryPath) return;
+
+        // Check if we already have this message (avoid duplicates)
+        const exists = this.conversationHistory.some(msg => 
+            msg.timestamp === message.timestamp && 
+            msg.content === message.content && 
+            msg.role === message.role
+        );
+
+        if (!exists) {
+            // Add message to history
+            this.conversationHistory.push(message);
+
+            // Update UI
+            if (message.role === 'user') {
+                this.addToTerminal(message.content, 'command');
+            } else if (message.role === 'claude') {
+                this.addToTerminal(message.content, 'claude-response');
+            }
+
+            this.scrollConversationToBottom();
+            this.updateDownloadButtonVisibility();
+            // No notification for new messages - they appear naturally in chat
+        }
+    }
+
+    handleChatCleared(data) {
+        const { directoryPath } = data;
+
+        // Only process for the current directory
+        if (directoryPath !== this.initialDirectoryPath) return;
+
+        // Clear local conversation history
+        this.clearConversationLocal();
+        this.showNotification('Chat cleared', 'info', 2000);
+    }
+
+    handleRoomStatus(data) {
+        this.activeUsers = data.activeUsers || [];
+        this.updateUserPresence();
+        // Keep current sync status - room status doesn't change sync state
+        
+        console.log(`Room status: ${data.activeUserCount} users active`);
+    }
+
+    handleUserTypingStart(data) {
+        // Could show typing indicator in the future
+        console.log('User started typing:', data.sessionId);
+    }
+
+    handleUserTypingStop(data) {
+        // Could hide typing indicator in the future
+        console.log('User stopped typing:', data.sessionId);
+    }
+
+    updateSyncStatus(status) {
+        this.syncStatus = status;
+        // Sync indicator removed - status tracking for internal use only
+    }
+
+
+    updateUserPresence() {
+        // Could add user presence indicators in the future
+        const userCount = this.activeUsers.length;
+        if (userCount > 0) {
+            console.log(`${userCount} users are viewing this directory`);
+        }
+    }
+
+    handleRemoteCommandStarted(data) {
+        const { command, directoryPath } = data;
+
+        // Only process for the current directory
+        if (directoryPath !== this.initialDirectoryPath) return;
+
+        // Ignore remote commands if we're executing locally
+        if (this.localCommandExecuting) {
+            console.log('Ignoring remote command started - local command in progress');
+            return;
+        }
+
+        console.log('Remote command started:', command.substring(0, 50) + '...');
+        
+        // Set remote command executing state
+        this.remoteCommandExecuting = true;
+
+        // Disable send button and show execution status (same as local execution)
+        const sendBtn = document.getElementById('send-claude-btn');
+        const input = document.getElementById('claude-input');
+        
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Executing...';
+        input.disabled = true;
+        input.placeholder = 'Enter your Claude command...';
+
+        // Show loading message in terminal (same as local execution)
+        const loadingMessage = '<span class="spinner"></span>Executing Claude Code command...';
+        this.remoteCommandLoadingElement = this.addToTerminal(loadingMessage, 'loading');
+    }
+
+    handleRemoteCommandCompleted(data) {
+        const { success, directoryPath } = data;
+
+        // Only process for the current directory
+        if (directoryPath !== this.initialDirectoryPath) return;
+
+        // Ignore remote command completion if we're executing locally
+        if (this.localCommandExecuting) {
+            console.log('Ignoring remote command completed - local command in progress');
+            return;
+        }
+
+        console.log('Remote command completed, success:', success);
+        
+        // Clear remote command executing state
+        this.remoteCommandExecuting = false;
+
+        // Re-enable send button and restore normal state
+        const sendBtn = document.getElementById('send-claude-btn');
+        const input = document.getElementById('claude-input');
+        
+        sendBtn.disabled = false;
+        sendBtn.textContent = 'Send';
+        input.disabled = false;
+        input.placeholder = 'Enter your Claude command...';
+
+        // Remove loading message
+        if (this.remoteCommandLoadingElement) {
+            this.remoteCommandLoadingElement.remove();
+            this.remoteCommandLoadingElement = null;
+        }
+
+        // Show completion message (same as local execution)
+        const statusMessage = success ? 
+            '✅ Command completed successfully' : 
+            '❌ Command execution failed';
+        this.addToTerminal(statusMessage, 'system');
+    }
+
+    generateSessionId() {
+        return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+    }
+
     async initializeApp() {
         // Load directories after successful authentication
         await this.loadDirectories();
+        
+        // Fetch session ID for WebSocket coordination
+        await this.fetchSessionId();
+    }
+
+    async fetchSessionId() {
+        try {
+            const response = await fetch('/api/status');
+            const data = await response.json();
+            
+            if (data.success !== false && data.sessionId) {
+                this.currentSession = data.sessionId;
+                console.log('Session ID fetched:', this.currentSession);
+            }
+        } catch (error) {
+            console.error('Failed to fetch session ID:', error);
+            // Fall back to generating our own session ID
+            if (!this.currentSession) {
+                this.currentSession = this.generateSessionId();
+            }
+        }
     }
 
     setupEventListeners() {
@@ -414,6 +721,9 @@ class RemoteClaudeApp {
     }
 
     async handleLogout() {
+        // Leave WebSocket room before logout
+        this.leaveDirectoryRoom();
+
         try {
             const response = await fetch('/api/logout', {
                 method: 'POST'
@@ -775,6 +1085,9 @@ class RemoteClaudeApp {
                 }
 
                 this.showFilesBrowser(data.directory, data.breadcrumbs);
+
+                // Join WebSocket room for this directory
+                await this.joinDirectoryRoom(this.initialDirectoryPath);
 
                 // Update browser history
                 history.pushState({ section: 'app', directory: data.directory.name }, '', '#app');
@@ -1142,6 +1455,12 @@ class RemoteClaudeApp {
             return;
         }
 
+        // Check if any command is already executing (local or remote)
+        if (this.localCommandExecuting || this.remoteCommandExecuting) {
+            this.updateStatus('A command is already executing. Please wait.', 'warning');
+            return;
+        }
+
         // Handle special commands
         if (command === '/clear') {
             // Add command to terminal first
@@ -1202,6 +1521,9 @@ class RemoteClaudeApp {
         input.value = '';
         input.style.height = 'auto';
 
+        // Set local command executing flag to ignore remote broadcasts
+        this.localCommandExecuting = true;
+
         // Disable send button and show loading with spinner
         const sendBtn = document.getElementById('send-claude-btn');
         sendBtn.disabled = true;
@@ -1225,6 +1547,9 @@ class RemoteClaudeApp {
             });
 
             const data = await response.json();
+
+            // Clear local command executing flag first to prevent race conditions
+            this.localCommandExecuting = false;
 
             // Remove loading spinner and re-enable send button
             if (loadingElement) {
@@ -1269,6 +1594,9 @@ class RemoteClaudeApp {
             }
 
         } catch (error) {
+            // Clear local command executing flag first to prevent race conditions
+            this.localCommandExecuting = false;
+
             // Remove loading spinner and re-enable send button
             if (loadingElement) {
                 loadingElement.remove();
@@ -1433,6 +1761,19 @@ class RemoteClaudeApp {
         this.updateDownloadButtonVisibility();
 
         this.updateStatus('Conversation cleared', 'info');
+    }
+
+    clearConversationLocal() {
+        // Clear from memory only (for WebSocket events)
+        this.conversationHistory = [];
+        this.sessionStartTime = new Date().toISOString();
+
+        // Clear terminal display
+        const output = document.getElementById('claude-output');
+        output.innerHTML = '<div class="terminal-welcome"><div class="welcome-line">Remote Claude Web Interface</div></div>';
+
+        // Update download button visibility
+        this.updateDownloadButtonVisibility();
     }
 
     trimLastMessage() {
