@@ -24,5 +24,9 @@
   "security": {
     "allowedDirectoriesFile": "./config/allow-dirs.txt",
     "passwordFile": "./config/passwd.txt"
+  },
+  "chatLog": {
+    "enabled": true,
+    "fileName": "chatlog.md"
   }
 }

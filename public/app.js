@@ -478,8 +478,8 @@ class RemoteClaudeApp {
         // Store the current directory path to restore selection
         const previousDirectoryPath = this.initialDirectoryPath;
 
-        // Save current conversation before leaving (it's already saved, but this ensures it's up to date)
-        this.saveConversationToStorage();
+        // Current conversation is automatically saved to server as messages are sent
+        // No need to manually save here
 
         // Clear the current directory context
         this.currentDirectory = null;
@@ -487,7 +487,7 @@ class RemoteClaudeApp {
         this.initialDirectoryPath = null;
         this.currentDirectoryName.textContent = 'Remote Claude';
 
-        // Clear conversation history for the new session (but keep in localStorage)
+        // Clear conversation history for the new session
         this.conversationHistory = [];
         this.sessionStartTime = new Date().toISOString();
 
@@ -760,9 +760,16 @@ class RemoteClaudeApp {
                 this.initialDirectoryPath = data.directory.path; // Store the initial selected directory
 
                 // Load stored conversation for this directory
-                const hasStoredConversation = this.loadConversationFromStorage();
-                if (!hasStoredConversation) {
-                    // Start fresh session if no stored conversation
+                try {
+                    const hasStoredConversation = await this.loadConversationFromServer();
+                    if (!hasStoredConversation) {
+                        // Start fresh session if no stored conversation
+                        this.conversationHistory = [];
+                        this.sessionStartTime = new Date().toISOString();
+                    }
+                } catch (error) {
+                    console.warn('Failed to load conversation from server:', error);
+                    // Start fresh session on error
                     this.conversationHistory = [];
                     this.sessionStartTime = new Date().toISOString();
                 }
@@ -1279,78 +1286,112 @@ class RemoteClaudeApp {
     }
 
     addToConversationHistory(role, content) {
-        this.conversationHistory.push({
-            role: role, // 'user', 'claude', or 'system'
+        const message = {
+            role: role,
             content: content,
             timestamp: new Date().toISOString(),
             directory: this.currentDirectory
-        });
+        };
+        
+        this.conversationHistory.push(message);
 
-        // Save to localStorage
-        this.saveConversationToStorage();
+        // Save message to server (but only user and claude messages, not system messages)
+        if (role === 'user' || role === 'claude') {
+            this.saveMessageToServer(message);
+        }
 
         // Update download button visibility
         this.updateDownloadButtonVisibility();
     }
 
-    getStorageKey() {
-        // Create a unique key for this directory
-        return `claude-conversation-${this.initialDirectoryPath || 'unknown'}`;
-    }
-
-    saveConversationToStorage() {
+    async saveMessageToServer(message) {
         if (!this.initialDirectoryPath) return;
 
         try {
-            const conversationData = {
-                history: this.conversationHistory,
-                sessionStartTime: this.sessionStartTime,
-                lastUpdated: new Date().toISOString(),
-                directory: this.currentDirectory,
-                directoryPath: this.initialDirectoryPath
-            };
+            const response = await fetch('/api/chatlog', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message
+                })
+            });
 
-            localStorage.setItem(this.getStorageKey(), JSON.stringify(conversationData));
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save message to server');
+            }
         } catch (error) {
-            console.warn('Failed to save conversation to localStorage:', error);
+            console.warn('Failed to save message to server:', error);
+            // Continue operation - chat remains functional even if save fails
+            this.showNotification('Chat history could not be saved: ' + error.message, 'warning');
         }
     }
 
-    loadConversationFromStorage() {
+    async loadConversationFromServer() {
         if (!this.initialDirectoryPath) return false;
 
         try {
-            const stored = localStorage.getItem(this.getStorageKey());
-            if (!stored) return false;
+            // Load conversation from server
+            const response = await fetch('/api/chatlog', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
 
-            const conversationData = JSON.parse(stored);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to load conversation from server');
+            }
 
-            // Restore conversation history
-            this.conversationHistory = conversationData.history || [];
-            this.sessionStartTime = conversationData.sessionStartTime || new Date().toISOString();
+            const data = await response.json();
+            const chatHistory = data.chatHistory;
 
-            // Restore terminal display
-            this.restoreTerminalFromHistory();
+            if (chatHistory && chatHistory.history && chatHistory.history.length > 0) {
+                // Restore conversation history
+                this.conversationHistory = chatHistory.history;
+                this.sessionStartTime = chatHistory.sessionStartTime || new Date().toISOString();
+                
+                // Restore terminal display
+                this.restoreTerminalFromHistory();
+                
+                // Update download button visibility
+                this.updateDownloadButtonVisibility();
+                
+                return true;
+            }
 
-            // Update download button visibility
-            this.updateDownloadButtonVisibility();
-
-            return true;
+            return false;
         } catch (error) {
-            console.warn('Failed to load conversation from localStorage:', error);
+            console.warn('Failed to load conversation from server:', error);
+            // Continue with empty conversation on error
             return false;
         }
     }
 
-    clearConversationFromStorage() {
+    async clearConversationFromServer() {
         if (!this.initialDirectoryPath) return;
 
         try {
-            localStorage.removeItem(this.getStorageKey());
+            const response = await fetch('/api/chatlog/clear', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to clear conversation on server');
+            }
         } catch (error) {
-            console.warn('Failed to clear conversation from localStorage:', error);
+            console.warn('Failed to clear conversation from server:', error);
+            throw error;
         }
     }
+
 
     restoreTerminalFromHistory() {
         const output = document.getElementById('claude-output');
@@ -1371,9 +1412,14 @@ class RemoteClaudeApp {
         this.scrollConversationToBottom();
     }
 
-    clearCurrentConversation() {
-        // Clear from localStorage
-        this.clearConversationFromStorage();
+    async clearCurrentConversation() {
+        // Clear from server
+        try {
+            await this.clearConversationFromServer();
+        } catch (error) {
+            console.warn('Failed to clear conversation from server:', error);
+            this.showNotification('Failed to clear conversation history: ' + error.message, 'error');
+        }
 
         // Clear from memory
         this.conversationHistory = [];
@@ -1399,8 +1445,9 @@ class RemoteClaudeApp {
         // Remove the last message from conversation history
         const removedMessage = this.conversationHistory.pop();
         
-        // Save the updated conversation to localStorage
-        this.saveConversationToStorage();
+        // Note: Individual messages are saved to server when sent
+        // For undo operations, we clear and rebuild from remaining messages
+        // This is a limitation - proper implementation would need server-side undo support
 
         // Rebuild the terminal display from the updated history
         this.restoreTerminalFromHistory();

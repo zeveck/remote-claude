@@ -96,6 +96,10 @@ const fileSystemManager = new FileSystemManager(config);
 const { ClaudeCodeIntegration } = require('./claude-code-integration');
 const claudeCodeIntegration = new ClaudeCodeIntegration();
 
+// Initialize chat log manager
+const ChatLogManager = require('./chat-log-manager');
+const chatLogManager = new ChatLogManager(config);
+
 // Protected routes (require authentication)
 app.get('/api/status', authMiddleware.requireAuth(), (req, res) => {
   res.json({
@@ -225,6 +229,133 @@ app.get('/api/file-content',
     });
   }
 });
+
+// Chat log management routes
+app.get('/api/chatlog', authMiddleware.requireAuth(), async (req, res) => {
+  try {
+    const currentDirectory = req.session.currentDirectory;
+
+    if (!currentDirectory) {
+      return res.status(400).json({
+        success: false,
+        error: 'No directory selected. Please select a directory first.',
+        needsDirectorySelection: true
+      });
+    }
+
+    // Validate directory is allowed
+    if (!fileSystemManager.isDirectoryAllowed(currentDirectory)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Directory access denied'
+      });
+    }
+
+    const chatHistory = await chatLogManager.readChatLog(currentDirectory);
+
+    res.json({
+      success: true,
+      chatHistory: chatHistory
+    });
+
+  } catch (error) {
+    logger.error('Failed to read chat log', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/chatlog', 
+  authMiddleware.requireAuth(),
+  ValidationMiddleware.requireFields(['message']),
+  async (req, res) => {
+  try {
+    const { message } = req.body;
+    const currentDirectory = req.session.currentDirectory;
+
+    if (!currentDirectory) {
+      return res.status(400).json({
+        success: false,
+        error: 'No directory selected. Please select a directory first.',
+        needsDirectorySelection: true
+      });
+    }
+
+    // Validate directory is allowed
+    if (!fileSystemManager.isDirectoryAllowed(currentDirectory)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Directory access denied'
+      });
+    }
+
+    // Validate message format
+    if (!message.role || !message.content) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message must have role and content fields'
+      });
+    }
+
+    // Ensure timestamp exists
+    if (!message.timestamp) {
+      message.timestamp = new Date().toISOString();
+    }
+
+    await chatLogManager.appendMessage(currentDirectory, message);
+
+    res.json({
+      success: true,
+      message: 'Message saved to chat log'
+    });
+
+  } catch (error) {
+    logger.error('Failed to save message to chat log', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.delete('/api/chatlog/clear', authMiddleware.requireAuth(), async (req, res) => {
+  try {
+    const currentDirectory = req.session.currentDirectory;
+
+    if (!currentDirectory) {
+      return res.status(400).json({
+        success: false,
+        error: 'No directory selected. Please select a directory first.',
+        needsDirectorySelection: true
+      });
+    }
+
+    // Validate directory is allowed
+    if (!fileSystemManager.isDirectoryAllowed(currentDirectory)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Directory access denied'
+      });
+    }
+
+    await chatLogManager.clearChatLog(currentDirectory);
+
+    res.json({
+      success: true,
+      message: 'Chat log cleared successfully'
+    });
+
+  } catch (error) {
+    logger.error('Failed to clear chat log', { error: error.message, stack: error.stack });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 
 // Claude Code execution endpoint
 app.post('/api/command', 
