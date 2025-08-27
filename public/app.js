@@ -510,9 +510,37 @@ class RemoteClaudeApp {
         return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
     }
 
+    getLastSelectedDirectory() {
+        try {
+            return localStorage.getItem('lastSelectedDirectory');
+        } catch (error) {
+            console.warn('Failed to read from localStorage:', error);
+            return null;
+        }
+    }
+
+    saveLastSelectedDirectory(directoryPath) {
+        try {
+            localStorage.setItem('lastSelectedDirectory', directoryPath);
+        } catch (error) {
+            console.warn('Failed to save to localStorage:', error);
+        }
+    }
+
+    clearLastSelectedDirectory() {
+        try {
+            localStorage.removeItem('lastSelectedDirectory');
+        } catch (error) {
+            console.warn('Failed to clear from localStorage:', error);
+        }
+    }
+
     async initializeApp() {
+        // Get last selected directory from localStorage
+        const lastDirectory = this.getLastSelectedDirectory();
+        
         // Load directories after successful authentication
-        await this.loadDirectories();
+        await this.loadDirectories(lastDirectory);
         
         // Fetch session ID for WebSocket coordination
         await this.fetchSessionId();
@@ -1068,6 +1096,9 @@ class RemoteClaudeApp {
                 this.currentDirectory = data.directory.name;
                 this.currentDirectoryPath = data.directory.path;
                 this.initialDirectoryPath = data.directory.path; // Store the initial selected directory
+
+                // Save selected directory to localStorage for next session
+                this.saveLastSelectedDirectory(directoryPath);
 
                 // Load stored conversation for this directory
                 try {
